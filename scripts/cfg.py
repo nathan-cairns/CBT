@@ -29,12 +29,12 @@ def process_set(file_path):
         content = f.readlines()
         content = [line.strip() for line in content if os.path.basename(line.strip()) != '__init__.py']
 
-    for f in content[:3]:
+    for f in content[5:8]:
         build_cfg(f)
 
 def build_cfg(file_path):
     cfg = CFGBuilder().build_from_file(os.path.basename(file_path), '{}/{}'.format(DATA_PATH, file_path))
-    cfg.build_visual('./{}'.format(os.path.basename(file_path)), format='pdf', show=False)
+    cfg.build_visual('./{}'.format(os.path.basename(file_path)), format='pdf')
 
 
 # MAIN #
