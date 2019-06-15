@@ -35,7 +35,7 @@ err_no = 0
 
 # FUNCTIONS #
 
-# TODO: convert dataset to python 3?
+# TODO: convert dataset to python 3?  maybe execute in batches to stop the large slowdown
 # TODO: add graphviz step in readme and add to envir vars
 
 
