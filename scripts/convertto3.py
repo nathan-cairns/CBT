@@ -13,6 +13,12 @@ from iteratortools import *
 import os
 
 
+# CONSTANTS #
+
+
+PROCESSING_CHUNK_SIZE = 50
+
+
 # FUNCTIONS #
 
 
@@ -23,7 +29,7 @@ def process_set():
     content = get_file_paths()
     print('Converting from python2 to python3 syntax:')
 
-    in_chunks = chunks(content, 20)
+    in_chunks = chunks(content, PROCESSING_CHUNK_SIZE)
     progress_bar = ProgressBar(0, content.__len__(), prefix='Progress:', suffix='Complete')
     progress_bar.print_progress_bar(0)
     for i, chunk in enumerate(in_chunks):
