@@ -21,15 +21,24 @@ def process_set():
         os.makedirs(ERROR_LOG_PATH)
 
     content = get_file_paths()
+    print('Converting from python2 to python3 syntax:')
 
+    in_chunks = chunks(content, 20)
     progress_bar = ProgressBar(0, content.__len__(), prefix='Progress:', suffix='Complete')
     progress_bar.print_progress_bar(0)
-    for i, f in enumerate(content):
+    for i, chunk in enumerate(in_chunks):
         try:
+            for j, f in enumerate(chunk):
+                chunk[j] = generalize_path(os.path.join(DATA_PATH, f))
             with open(os.devnull, 'w') as quiet:
-                call(['2to3', generalize_path(os.path.join(DATA_PATH, f))], stderr=quiet, stdout=quiet)
+                call(['2to3', '-w', '-n'] + chunk, stderr=quiet, stdout=quiet)
         finally:
-            progress_bar.print_progress_bar(i + 1)
+            progress_bar.print_progress_bar((i + 1) * chunk.__len__())
+
+
+def chunks(l, n):
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 
 
 def generalize_path(path):
