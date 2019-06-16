@@ -33,6 +33,7 @@ def process_set():
         os.makedirs(OUTPUT_DATA_PATH)
 
     content = get_file_paths()
+    print('Generating CFG files:')
 
     progress_bar = ProgressBar(0, content.__len__(), prefix='Progress:', suffix='Complete')
     progress_bar.print_progress_bar(0)
