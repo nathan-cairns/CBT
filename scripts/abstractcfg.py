@@ -5,8 +5,8 @@
 # Author: Buster Major
 
 
-import pydot as pd
 import networkx as nx
+import re
 
 
 # IMPORTS #
@@ -23,7 +23,11 @@ def abstract_if(cfg):
 if __name__ == '__main__':
     g = nx.drawing.nx_pydot.read_dot('C:\\Users\\Buster\\Desktop\\ex30.py.dot')
     attributes = nx.get_node_attributes(g, 'label')
+    regexp = re.compile(r'')
     for e in attributes:
+
+        # regex for regular ifs: 'if\s+((?!(\"\:\")).*):' use first capturing group
+        # regex for one line if elses: 'if\s+((?!(\"else\")).*)\s+else'
         print(attributes[e])
 
 
