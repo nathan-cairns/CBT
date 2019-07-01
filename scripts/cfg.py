@@ -22,10 +22,6 @@ err_no = 0
 # FUNCTIONS #
 
 
-# TODO: convert dataset to python 3?  maybe execute in batches to stop the large slowdown, also output stderr on the subproc.
-# TODO: add graphviz step in readme and add to envir vars
-
-
 def process_set():
     if not os.path.exists(ERROR_LOG_PATH):
         os.makedirs(ERROR_LOG_PATH)
