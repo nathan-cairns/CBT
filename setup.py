@@ -7,5 +7,8 @@ setup(name='cbt',
       author='Buster & Nathan',
       packages= ['cbt'],
       install_requires=[
-            'staticfg'
+            'staticfg',
+            'networkx',
+            'graphviz',
+            'pydot'
       ])
