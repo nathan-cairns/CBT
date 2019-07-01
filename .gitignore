@@ -104,6 +104,6 @@ venv.bak/
 .mypy_cache/
 
 # data folder contents
-./data/*
-
 .idea/
+log/
+data/*
