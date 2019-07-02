@@ -21,15 +21,23 @@ def abstract_if(cfg):
 
 
 if __name__ == '__main__':
-    g = nx.drawing.nx_pydot.read_dot('C:\\Users\\Buster\\Desktop\\ex30.py.dot')
+    g = nx.drawing.nx_pydot.read_dot('C:\\Users\\Buster\\Desktop\\out')
     attributes = nx.get_node_attributes(g, 'label')
-    regexp = re.compile(r'')
-    for e in attributes:
 
-        # regex for regular ifs: 'if\s+((?!(\"\:\")).*):' use first capturing group
-        # regex for one line if elses: 'if\s+((?!(\"else\")).*)\s+else'
-        print(attributes[e])
-
-
-
+    regexp = re.compile(r'((.|\n)*)(if\s+((?!(\"\:\")).*):)')
+    for n in g.nodes():
+        # Match nodes with an 'if' statement in them
+        if regexp.match(g.node[n]['label']):
+            match = regexp.search(g.node[n]['label'])
+            minus_if = match.group(1)
+            if_statement = match.group(3)
+            predicate = match.group(4)
+            for ne in nx.neighbors(g, n):
+                print(ne)
+    # for e in attributes:
+    #     # regex for regular ifs: 'if\s+((?!(\"\:\")).*):' use first capturing group
+    #     # regex for one line if elses: 'if\s+((?!(\"else\")).*)\s+else'
+    #     if re.match(r'(.|\n)*if\s+((?!(\"\:\")).*):', attributes[e]):
+    #         print(attributes[e])
+    #         print(nx.neighbors(g, attributes[e]))
 
