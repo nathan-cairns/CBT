@@ -25,8 +25,8 @@ err_no = 0
 def process_set():
     if not os.path.exists(ERROR_LOG_PATH):
         os.makedirs(ERROR_LOG_PATH)
-    if not os.path.exists(OUTPUT_DATA_PATH):
-        os.makedirs(OUTPUT_DATA_PATH)
+    if not os.path.exists(get_output_data_path('')):
+        os.makedirs(get_output_data_path(''))
 
     content = get_file_paths()
     print('Generating CFG files:')
@@ -46,8 +46,8 @@ def process_set():
 
 def build_cfg(file_path):
     cfg = CFGBuilder().build_from_file(os.path.basename(file_path), os.path.join(DATA_PATH, file_path))
-    cfg.build_visual(os.path.join(OUTPUT_DATA_PATH, file_path), format='dot', calls=False, show=False)
-    os.remove(os.path.join(OUTPUT_DATA_PATH, file_path))  # Delete the other weird file created
+    cfg.build_visual(get_output_data_path(file_path), format='dot', calls=False, show=False)
+    os.remove(get_output_data_path(file_path))  # Delete the other weird file created
 
 
 def handle_exception(file_path, message, stacktrace):

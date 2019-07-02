@@ -16,13 +16,16 @@ import os
 
 REPO_ROOT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 DATA_PATH = os.path.join(REPO_ROOT_PATH, 'data', 'py150_files')
-OUTPUT_DATA_PATH = os.path.join(DATA_PATH, 'data_cfg')
 
 ERROR_LOG_PATH = os.path.join(REPO_ROOT_PATH, 'log', 'dataprocessing')
 ERROR_LOG_FILE = os.path.join(ERROR_LOG_PATH, 'errorlog.csv')
 
 TRAINING_SET_FILE_PATH = os.path.join(DATA_PATH, 'python100k_train.txt')
 EVALUATION_SET_FILE_PATH = os.path.join(DATA_PATH, 'python50k_eval.txt')
+
+
+def get_output_data_path(file_path):
+    return os.path.join(DATA_PATH, 'data_cfg' + file_path[4:])
 
 
 def get_file_paths():
