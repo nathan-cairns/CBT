@@ -47,13 +47,6 @@ def chunks(l, n):
         yield l[i:i + n]
 
 
-def generalize_path(path):
-    path = os.path.normpath(os.path.expanduser(path))
-    if path.startswith("\\"):
-        return "C:" + path
-    return path
-
-
 # MAIN #
 
 

@@ -24,6 +24,13 @@ TRAINING_SET_FILE_PATH = os.path.join(DATA_PATH, 'python100k_train.txt')
 EVALUATION_SET_FILE_PATH = os.path.join(DATA_PATH, 'python50k_eval.txt')
 
 
+def generalize_path(path):
+    path = os.path.normpath(os.path.expanduser(path))
+    if path.startswith("\\"):
+        return "C:" + path
+    return path
+
+
 def get_output_data_path(file_path):
     return os.path.join(DATA_PATH, 'data_cfg' + file_path[4:])
 
@@ -32,8 +39,14 @@ def get_file_paths():
     with open(TRAINING_SET_FILE_PATH, encoding='utf8') as f:
         content = f.readlines()
         return [line.strip() for line in content if os.path.basename(line.strip()) != '__init__.py']
-        
-        
+
+
+def get_output_file_paths():
+    with open(TRAINING_SET_FILE_PATH, encoding='utf8') as f:
+        content = f.readlines()
+        return ['data_cfg' + line.strip()[4:] for line in content if os.path.basename(line.strip()) != '__init__.py']
+
+
 class ProgressBar:
     def __init__(self, iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
         self.iteration = iteration
