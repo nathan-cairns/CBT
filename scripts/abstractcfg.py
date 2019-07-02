@@ -21,7 +21,8 @@ def abstract_if(cfg):
 
 
 if __name__ == '__main__':
-    g = nx.drawing.nx_pydot.read_dot('C:\\Users\\Buster\\Desktop\\out')
+    i = 500  # TODO: change the number to something dynamic
+    g = nx.drawing.nx_pydot.read_dot('C:\\Users\\Buster\\Desktop\\ex30.py.dot')
     attributes = nx.get_node_attributes(g, 'label')
 
     regexp = re.compile(r'((.|\n)*)(if\s+((?!(\"\:\")).*):)')
@@ -33,8 +34,8 @@ if __name__ == '__main__':
 
     for n in nodes_to_change:
         match = regexp.search(g.node[n]['label'])
-        minus_if = match.group(1)
-        predicate = match.group(4)
+        minus_if = match.group(1).strip('"')
+        predicate = match.group(4).strip('"')
 
         # Remove 'if' from original node label
         g.node[n]['label'] = minus_if
@@ -43,14 +44,28 @@ if __name__ == '__main__':
         old_neighbours = []
         for ne in nx.neighbors(g, n):
             old_neighbours.append(ne)
+        if old_neighbours.__len__() > 2:
+            raise Exception('If node has more than 2 children, not supported')
 
-        # Add new 'if' node and connect it to previous node
-        g.add_node(69, label=predicate)  # TODO: change the number to something dynamic
-        g.add_edge(n, 69)
+        if g.node[n]['label'] is '':
+            # Old node label is now blank when predicate is removed so the old node becomes the new node to change
+            g.node[n]['label'] = predicate
+            g.node[n]['shape'] = 'diamond'
+            new_node = n
+        else:
+            # Add new 'if' node and connect it to previous node
+            new_node = i
+            g.add_node(new_node, label=predicate, shape='diamond')
+            g.add_edge(n, new_node)
+
+        # Remove old neighbours of original node
+        g.remove_edge(n, old_neighbours[0])
+        g.remove_edge(n, old_neighbours[1])
 
         # Add old neighbours as children of the new if node
-        for old_neighbour in old_neighbours:
-            g.remove_edge(n, old_neighbour)
-            g.add_edge(69, old_neighbour)
+        g.add_edge(new_node, old_neighbours[0], label='yes')
+        g.add_edge(new_node, old_neighbours[1], label='no')
 
-    nx.nx_pydot.write_dot(g, 'out.dot')
+        i += 1
+
+    nx.nx_pydot.write_dot(g, 'C:\\Users\\Buster\\Desktop\\out.dot')
