@@ -25,15 +25,28 @@ if __name__ == '__main__':
     attributes = nx.get_node_attributes(g, 'label')
 
     regexp = re.compile(r'((.|\n)*)(if\s+((?!(\"\:\")).*):)')
+    nodes_to_change = []
     for n in g.nodes():
         # Match nodes with an 'if' statement in them
         if regexp.match(g.node[n]['label']):
-            match = regexp.search(g.node[n]['label'])
-            minus_if = match.group(1)
-            if_statement = match.group(3)
-            predicate = match.group(4)
-            for ne in nx.neighbors(g, n):
-                print(ne)
+            nodes_to_change.append(n)
+
+    for n in nodes_to_change:
+        match = regexp.search(g.node[n]['label'])
+        minus_if = match.group(1)
+        predicate = match.group(4)
+
+        # Remove 'if' from original node label
+        g.node[n]['label'] = minus_if
+
+        # Remove but remember current if branches of the node
+        for ne in nx.neighbors(g, n):
+            print(ne)
+
+        # Add new 'if' node and connect it to previous node
+        g.add_node(69, label=predicate)  # TODO: change the number to something dynamic
+        g.add_edge(n, 69)
+
     # for e in attributes:
     #     # regex for regular ifs: 'if\s+((?!(\"\:\")).*):' use first capturing group
     #     # regex for one line if elses: 'if\s+((?!(\"else\")).*)\s+else'
