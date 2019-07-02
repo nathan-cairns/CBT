@@ -7,23 +7,14 @@
 
 import networkx as nx
 import re
+from iteratortools import *
 
 
 # IMPORTS #
 
 
-def abstract_if(cfg):
-    a = 1
-    # fnefcv
-
-
-# todo: main method which reads contents of directory
-
-
-if __name__ == '__main__':
+def abstract_if(g):
     i = 500  # TODO: change the number to something dynamic
-    g = nx.drawing.nx_pydot.read_dot('C:\\Users\\Buster\\Desktop\\ex30.py.dot')
-    attributes = nx.get_node_attributes(g, 'label')
 
     regexp = re.compile(r'((.|\n)*)(if\s+((?!(\"\:\")).*):)')
     nodes_to_change = []
@@ -68,4 +59,15 @@ if __name__ == '__main__':
 
         i += 1
 
-    nx.nx_pydot.write_dot(g, 'C:\\Users\\Buster\\Desktop\\out.dot')
+# todo: main method which reads contents of directory
+
+
+if __name__ == '__main__':
+
+    content = get_file_paths()
+    # TODO: finish
+
+    graph = nx.drawing.nx_pydot.read_dot('C:\\Users\\Buster\\Desktop\\ex30.py.dot')
+    abstract_if(graph)
+
+    nx.nx_pydot.write_dot(graph, 'C:\\Users\\Buster\\Desktop\\out.dot')
