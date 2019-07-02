@@ -39,18 +39,18 @@ if __name__ == '__main__':
         # Remove 'if' from original node label
         g.node[n]['label'] = minus_if
 
-        # Remove but remember current if branches of the node
+        # Remember current old neighbours to remove
+        old_neighbours = []
         for ne in nx.neighbors(g, n):
-            print(ne)
+            old_neighbours.append(ne)
 
         # Add new 'if' node and connect it to previous node
         g.add_node(69, label=predicate)  # TODO: change the number to something dynamic
         g.add_edge(n, 69)
 
-    # for e in attributes:
-    #     # regex for regular ifs: 'if\s+((?!(\"\:\")).*):' use first capturing group
-    #     # regex for one line if elses: 'if\s+((?!(\"else\")).*)\s+else'
-    #     if re.match(r'(.|\n)*if\s+((?!(\"\:\")).*):', attributes[e]):
-    #         print(attributes[e])
-    #         print(nx.neighbors(g, attributes[e]))
+        # Add old neighbours as children of the new if node
+        for old_neighbour in old_neighbours:
+            g.remove_edge(n, old_neighbour)
+            g.add_edge(69, old_neighbour)
 
+    nx.nx_pydot.write_dot(g, 'out.dot')
