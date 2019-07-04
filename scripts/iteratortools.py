@@ -9,6 +9,7 @@
 
 
 import os
+import datetime
 
 
 # CONSTANTS #
@@ -18,7 +19,6 @@ REPO_ROOT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 DATA_PATH = os.path.join(REPO_ROOT_PATH, 'data', 'py150_files')
 
 ERROR_LOG_PATH = os.path.join(REPO_ROOT_PATH, 'log', 'dataprocessing')
-ERROR_LOG_FILE = os.path.join(ERROR_LOG_PATH, 'errorlog.csv')
 
 TRAINING_SET_FILE_PATH = os.path.join(DATA_PATH, 'python100k_train.txt')
 EVALUATION_SET_FILE_PATH = os.path.join(DATA_PATH, 'python50k_eval.txt')
@@ -36,15 +36,22 @@ def get_output_data_path(file_path):
 
 
 def get_file_paths():
+    content = []
     with open(TRAINING_SET_FILE_PATH, encoding='utf8') as f:
-        content = f.readlines()
-        return [line.strip() for line in content if os.path.basename(line.strip()) != '__init__.py']
+        content += f.readlines()
+    with open(EVALUATION_SET_FILE_PATH, encoding='utf8') as f:
+        content += f.readlines()
+    return [line.strip() for line in content if os.path.basename(line.strip()) != '__init__.py']
 
 
 def get_output_file_paths():
-    with open(TRAINING_SET_FILE_PATH, encoding='utf8') as f:
-        content = f.readlines()
-        return ['data_cfg' + line.strip()[4:] for line in content if os.path.basename(line.strip()) != '__init__.py']
+    content = get_file_paths()
+    return ['data_cfg' + line.strip()[4:] for line in content if os.path.basename(line.strip()) != '__init__.py']
+
+
+def handle_exception(error_log_file_path, file_path, message, stacktrace):
+    with open(error_log_file_path, 'a+', encoding='utf8') as f:
+        f.write('\r{},{},{},{}\n'.format(str(datetime.datetime.now()), message, file_path, stacktrace))
 
 
 class ProgressBar:

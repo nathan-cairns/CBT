@@ -27,6 +27,7 @@ def process_set():
         os.makedirs(ERROR_LOG_PATH)
 
     content = get_file_paths()
+    # content = content[int(content.__len__()*239/240):]
     print('Converting from python2 to python3 syntax:')
 
     in_chunks = chunks(content, PROCESSING_CHUNK_SIZE)
