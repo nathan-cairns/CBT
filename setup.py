@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from setuptools import setup
-import os
 
 setup(name='cbt',
       description='Generating code using machine learning',

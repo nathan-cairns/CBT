@@ -10,6 +10,9 @@
 
 import os
 import datetime
+from threading import Lock
+from multiprocessing.dummy import Pool as ThreadPool
+import multiprocessing
 
 
 # CONSTANTS #
@@ -54,6 +57,32 @@ def handle_exception(error_log_file_path, file_path, message, stacktrace):
         f.write('\r{},{},{},{}\n'.format(str(datetime.datetime.now()), message, file_path, stacktrace))
 
 
+def iterate(task, error_file_path, content):
+
+    progress_bar = ProgressBar(0, content.__len__(), prefix='Progress:', suffix='Complete')
+    progress_bar.print_progress_bar()
+
+    error_file_lock = Lock()
+    increment_work_lock = Lock()
+    increment_errors_lock = Lock()
+
+    def an_iteration(file):
+        try:
+            task(file)
+        except Exception as e:
+            with increment_errors_lock:
+                progress_bar.increment_errors()
+            with error_file_lock:
+                handle_exception(error_file_path, file, 'Error in doing thing', e)
+        finally:
+            with increment_work_lock:
+                progress_bar.increment_work()
+                progress_bar.print_progress_bar()
+
+    pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
+    pool.map(an_iteration, content)
+
+
 class ProgressBar:
     def __init__(self, iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
         self.iteration = iteration
@@ -63,12 +92,19 @@ class ProgressBar:
         self.decimals = decimals
         self.length = length
         self.fill = fill
+        self.errors = 0
 
-    def print_progress_bar(self, iteration, errors):
-        percent = ("{0:." + str(self.decimals) + "f}").format(100 * (iteration / float(self.total)))
-        filled_length = int(self.length * iteration // self.total)
+    def increment_work(self):
+        self.iteration += 1
+
+    def increment_errors(self):
+        self.errors += 1
+
+    def print_progress_bar(self):
+        percent = ("{0:." + str(self.decimals) + "f}").format(100 * (self.iteration / float(self.total)))
+        filled_length = int(self.length * self.iteration // self.total)
         bar = self.fill * filled_length + '-' * (self.length - filled_length)
-        print('%s |%s| %s%% (%s/%s) %s, %s %s' % (self.prefix, bar, percent, iteration, self.total, self.suffix, str(errors), 'errors'), end='\r')
+        print('%s |%s| %s%% (%s/%s) %s, %s %s' % (self.prefix, bar, percent, self.iteration, self.total, self.suffix, str(self.errors), 'errors'), end='\r')
         # Print New Line on Complete
-        if iteration == self.total:
+        if self.iteration == self.total:
             print()
