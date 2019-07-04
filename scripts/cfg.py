@@ -31,7 +31,7 @@ def process_set():
     print('Generating CFG files:')
 
     progress_bar = ProgressBar(0, content.__len__(), prefix='Progress:', suffix='Complete')
-    progress_bar.print_progress_bar(0)
+    progress_bar.print_progress_bar(0, 0)
     for i, f in enumerate(content):
         try:
             build_cfg(f)
@@ -40,7 +40,7 @@ def process_set():
             err_no += 1
             handle_exception(ERROR_LOG_FILE, f, 'Error in building cfg file', e)
         finally:
-            progress_bar.print_progress_bar(i+1)
+            progress_bar.print_progress_bar(i+1, err_no)
 
 
 def build_cfg(file_path):

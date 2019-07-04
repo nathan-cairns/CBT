@@ -32,7 +32,7 @@ def process_set():
 
     in_chunks = chunks(content, PROCESSING_CHUNK_SIZE)
     progress_bar = ProgressBar(0, content.__len__(), prefix='Progress:', suffix='Complete')
-    progress_bar.print_progress_bar(0)
+    progress_bar.print_progress_bar(0, 0)
     for i, chunk in enumerate(in_chunks):
         try:
             for j, f in enumerate(chunk):
@@ -40,7 +40,7 @@ def process_set():
             with open(os.devnull, 'w') as quiet:
                 call(['2to3', '-w', '-n'] + chunk, stderr=quiet, stdout=quiet)
         finally:
-            progress_bar.print_progress_bar((i + 1) * chunk.__len__())
+            progress_bar.print_progress_bar((i + 1) * chunk.__len__(), 0)
 
 
 def chunks(l, n):

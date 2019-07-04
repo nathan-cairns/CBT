@@ -64,11 +64,11 @@ class ProgressBar:
         self.length = length
         self.fill = fill
 
-    def print_progress_bar(self, iteration):
+    def print_progress_bar(self, iteration, errors):
         percent = ("{0:." + str(self.decimals) + "f}").format(100 * (iteration / float(self.total)))
         filled_length = int(self.length * iteration // self.total)
         bar = self.fill * filled_length + '-' * (self.length - filled_length)
-        print('%s |%s| %s%% (%s/%s) %s' % (self.prefix, bar, percent, iteration, self.total, self.suffix), end='\r')
+        print('%s |%s| %s%% (%s/%s) %s, %s %s' % (self.prefix, bar, percent, iteration, self.total, self.suffix, str(errors), 'errors'), end='\r')
         # Print New Line on Complete
         if iteration == self.total:
             print()
