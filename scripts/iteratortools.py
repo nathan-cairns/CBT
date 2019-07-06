@@ -57,7 +57,14 @@ def handle_exception(error_log_file_path, file_path, message, stacktrace):
         f.write('\r{},{},{},{}\n'.format(str(datetime.datetime.now()), message, file_path, stacktrace))
 
 
+def chunks(l, n):
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+
 def iterate(task, error_file_path, content):
+    # Split content into chunks to avoid computer slowdown (I'm not sure why this happens)
+    chunked_content = list(chunks(content, 100))
 
     progress_bar = ProgressBar(0, content.__len__(), prefix='Progress:', suffix='Complete')
     progress_bar.print_progress_bar()
@@ -79,8 +86,9 @@ def iterate(task, error_file_path, content):
                 progress_bar.increment_work()
                 progress_bar.print_progress_bar()
 
-    pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
-    pool.map(an_iteration, content)
+    for chunk in chunked_content:
+        pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
+        pool.map(an_iteration, chunk)
 
 
 class ProgressBar:

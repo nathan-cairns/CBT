@@ -11,7 +11,6 @@
 from staticfg import CFGBuilder
 from iteratortools import *
 import os
-import staticfg
 
 
 # GLOBAL VARIABLES #
@@ -29,6 +28,7 @@ def process_set():
         os.makedirs(get_output_data_path(''))
 
     content = get_file_paths()
+    # content = content[int(content.__len__() * 13 / 100):]
     print('Generating CFG files:')
 
     iterate(build_cfg, ERROR_LOG_FILE, content)

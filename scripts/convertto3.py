@@ -40,7 +40,7 @@ def process_set():
             with open(os.devnull, 'w') as quiet:
                 call(['2to3', '-w', '-n'] + chunk, stderr=quiet, stdout=quiet)
         finally:
-            progress_bar.print_progress_bar((i + 1) * chunk.__len__(), 0)
+            progress_bar.print_progress_bar((i + 1) * content.__len__(), 0)
 
 
 def chunks(l, n):
