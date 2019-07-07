@@ -62,11 +62,9 @@ def chunks(l, n):
         yield l[i:i + n]
 
 
-def iterate(task, error_file_path, content):
-    # Split content into chunks to avoid computer slowdown (I'm not sure why this happens)
-    chunked_content = list(chunks(content, 100))
-
-    progress_bar = ProgressBar(0, content.__len__(), prefix='Progress:', suffix='Complete')
+def iterate(task, error_file_path, content, proportion=1, chunk_size=1):
+    total = content.__len__() / chunk_size
+    progress_bar = ProgressBar(total * proportion, total, prefix='Progress:', suffix='Complete')
     progress_bar.print_progress_bar()
 
     error_file_lock = Lock()
@@ -86,9 +84,8 @@ def iterate(task, error_file_path, content):
                 progress_bar.increment_work()
                 progress_bar.print_progress_bar()
 
-    for chunk in chunked_content:
-        pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
-        pool.map(an_iteration, chunk)
+    pool = multiprocessing.dummy.Pool(multiprocessing.cpu_count())
+    pool.map(an_iteration, content)
 
 
 class ProgressBar:
