@@ -5,69 +5,79 @@
 # Author: Buster Major
 
 
-import networkx as nx
-import re
-from iteratortools import *
-
-
 # IMPORTS #
 
 
-def abstract_if(g):
-    i = 500  # TODO: change the number to something dynamic
+import re
+import pydot
+import random
 
+
+# FUNCTIONS #
+
+
+def get_children(graph, node):
+    to_return = []
+    for e in graph.get_edge_list():
+        if str(e.get_source()) == str(node.get_name()):
+            to_return.append(graph.get_node(e.get_destination())[0])
+    return to_return
+
+
+def process(graph):
     regexp = re.compile(r'((.|\n)*)(if\s+((?!(\"\:\")).*):)')
     nodes_to_change = []
-    for n in g.nodes():
+    for n in graph.get_nodes():
         # Match nodes with an 'if' statement in them
-        if regexp.match(g.node[n]['label']):
+        if regexp.match(graph.get_node(n.get_name())[0].get_label()):
             nodes_to_change.append(n)
 
     for n in nodes_to_change:
-        match = regexp.search(g.node[n]['label'])
+        match = regexp.search(graph.get_node(n.get_name())[0].get_label())
         minus_if = match.group(1).strip('"')
         predicate = match.group(4).strip('"')
 
         # Remove 'if' from original node label
-        g.node[n]['label'] = minus_if
+        graph.get_node(n.get_name())[0].set_label(minus_if)
 
-        # Remember current old neighbours to remove
-        old_neighbours = []
-        for ne in nx.neighbors(g, n):
-            old_neighbours.append(ne)
-        if old_neighbours.__len__() > 2:
-            raise Exception('If node has more than 2 children, not supported')
+        # Remember current children to remove
+        old_children = get_children(graph, n)
 
-        if g.node[n]['label'] is '':
+        if graph.get_node(n.get_name())[0].get_label() is '':
             # Old node label is now blank when predicate is removed so the old node becomes the new node to change
-            g.node[n]['label'] = predicate
-            g.node[n]['shape'] = 'diamond'
-            new_node = n
+            node = graph.get_node(n.get_name())[0]
+            node.set('shape', 'diamond')
+            node.set('label', predicate)
+            new_node = node
         else:
             # Add new 'if' node and connect it to previous node
-            new_node = i
-            g.add_node(new_node, label=predicate, shape='diamond')
-            g.add_edge(n, new_node)
+            new_node = random.randint(1, 100001)
+            graph.add_node(pydot.Node(name=new_node, shape='diamond', label=predicate))
+            graph.add_edge(pydot.Edge(n.get_name(), str(new_node)))
 
-        # Remove old neighbours of original node
-        g.remove_edge(n, old_neighbours[0])
-        g.remove_edge(n, old_neighbours[1])
+        # Remove old edges of original node
+        if old_children.__len__() is 1:
+            if graph.get_edge(n.get_name(), old_children[0].get_name())[0].get('label').strip(' "\'\t\r\n') == predicate.strip(' "\'\t\r\n'):
+                label = 'yes'
+            else:
+                label = 'no'
+            graph.del_edge(n.get_name(), old_children[0].get_name(), 0)
+            graph.add_edge(pydot.Edge(new_node, old_children[0].get_name(), label=label))
+        else:
+            graph.del_edge(n.get_name(), old_children[0].get_name(), 0)
+            graph.del_edge(n.get_name(), old_children[1].get_name(), 0)
 
-        # Add old neighbours as children of the new if node
-        g.add_edge(new_node, old_neighbours[0], label='yes')
-        g.add_edge(new_node, old_neighbours[1], label='no')
-
-        i += 1
-
-# todo: main method which reads contents of directory
+            # Add old neighbours as children of the new if node
+            graph.add_edge(pydot.Edge(new_node, old_children[0].get_name(), label='yes'))
+            graph.add_edge(pydot.Edge(new_node, old_children[1].get_name(), label='no'))
 
 
 if __name__ == '__main__':
+    graph = pydot.graph_from_dot_file('C:\\Users\\Buster\\Documents\\Code\\CBT\\staticfg debugging\\edxStudio.py.dot')
+    for sg in graph[0].get_subgraph_list():
+        process(sg)
+    process(graph[0])
 
-    content = get_file_paths()
-    # TODO: finish
+    with open('C:\\Users\\Buster\\Documents\\Code\\CBT\\staticfg debugging\\exStudio.py.dot', 'w+') as f:
+        f.write(str(graph[0]))
 
-    graph = nx.drawing.nx_pydot.read_dot('C:\\Users\\Buster\\Desktop\\ex30.py.dot')
-    abstract_if(graph)
-
-    nx.nx_pydot.write_dot(graph, 'C:\\Users\\Buster\\Desktop\\out.dot')
