@@ -47,9 +47,9 @@ def get_file_paths():
     return [line.strip() for line in content if os.path.basename(line.strip()) != '__init__.py']
 
 
-def get_output_file_paths():
+def get_cfg_file_paths():
     content = get_file_paths()
-    return ['data_cfg' + line.strip()[4:] for line in content if os.path.basename(line.strip()) != '__init__.py']
+    return ['data_cfg' + line.strip()[4:] + '.dot' for line in content if os.path.basename(line.strip()) != '__init__.py']
 
 
 def handle_exception(error_log_file_path, file_path, message, stacktrace):
@@ -62,7 +62,7 @@ def chunks(l, n):
         yield l[i:i + n]
 
 
-def iterate(task, error_file_path, content, proportion=1, chunk_size=1):
+def iterate(task, error_file_path, content, proportion=0, chunk_size=1):
     total = content.__len__() / chunk_size
     progress_bar = ProgressBar(total * proportion, total, prefix='Progress:', suffix='Complete')
     progress_bar.print_progress_bar()

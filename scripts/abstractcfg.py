@@ -11,6 +11,13 @@
 import re
 import pydot
 import random
+from iteratortools import *
+
+
+# CONSTANTS #
+
+
+ERROR_LOG_FILE = os.path.join(ERROR_LOG_PATH, 'abstracting.csv')
 
 
 # FUNCTIONS #
@@ -24,7 +31,7 @@ def get_children(graph, node):
     return to_return
 
 
-def process(graph):
+def abstract_if(graph):
     regexp = re.compile(r'((.|\n)*)(if\s+((?!(\"\:\")).*):)')
     nodes_to_change = []
     for n in graph.get_nodes():
@@ -72,12 +79,18 @@ def process(graph):
             graph.add_edge(pydot.Edge(new_node, old_children[1].get_name(), label='no'))
 
 
-if __name__ == '__main__':
-    graph = pydot.graph_from_dot_file('C:\\Users\\Buster\\Documents\\Code\\CBT\\staticfg debugging\\edxStudio.py.dot')
+def process_graph(file_path):
+    file_path = generalize_path(os.path.join(DATA_PATH, file_path))
+    graph = pydot.graph_from_dot_file(file_path)
     for sg in graph[0].get_subgraph_list():
-        process(sg)
-    process(graph[0])
-
-    with open('C:\\Users\\Buster\\Documents\\Code\\CBT\\staticfg debugging\\exStudio.py.dot', 'w+') as f:
+        abstract_if(sg)
+    abstract_if(graph[0])
+    with open(file_path, 'w+') as f:
         f.write(str(graph[0]))
 
+
+if __name__ == '__main__':
+
+    content = get_cfg_file_paths()
+
+    iterate(process_graph, ERROR_LOG_FILE, content)
