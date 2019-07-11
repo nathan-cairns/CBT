@@ -110,7 +110,7 @@ def tokenize(text):
 if __name__ == '__main__':
     print('Scanning contents of files into memory')
     file_paths = it.get_file_paths()
-    text = get_as_file(file_paths[:1000])
+    text = get_as_file(file_paths[:10000])
     text = tokenize(text)
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))  # TODO: tokenize smarter
