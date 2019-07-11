@@ -32,7 +32,7 @@ def get_as_file(file_paths):
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
                 to_return += '\n' + f.read()  # TODO: insert some end of file character here?
-        except FileNotFoundError:
+        except (FileNotFoundError, UnicodeDecodeError) as e:
             files_not_found += 1
             progress_bar.increment_errors()
         finally:
