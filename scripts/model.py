@@ -163,7 +163,7 @@ if __name__ == '__main__':
         save_weights_only=True
     )
 
-    if sys.argv.__len__() is 0:
+    if len(sys.argv) == 1:
         history = model.fit(dataset, epochs=EPOCHS, callbacks=[checkpoint_callback])
     else:
         model = build_model(vocab_size, embedding_dimension, rnn_units, batch_size=1)
