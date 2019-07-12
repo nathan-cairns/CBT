@@ -22,6 +22,14 @@ EPOCHS = 10
 # FUNCTIONS #
 
 
+test = '''
+for i, mum in enumerate(this_list):
+    print("if only")
+    while True:
+        console.log("while if and")
+    hi.hey
+'''
+
 
 def get_as_file(file_paths):
     to_return = ''
@@ -32,11 +40,7 @@ def get_as_file(file_paths):
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
                 # tokeized = tokenize_file(f.read())
-                tokeized = tokenize_file('''for i, mum in enumerate(this_list):
-                    print("if only")
-                    while True:
-                        console.log("while if and")
-                ''')
+                tokeized = tokenize_file(test)
 
         except (FileNotFoundError, UnicodeDecodeError):
             files_not_found += 1

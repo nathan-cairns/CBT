@@ -7,7 +7,7 @@ word_to_token = {
     'eof': '\u1286',
     'if': '\u1287',
     '\n': '\u1288',
-    '\t': '\u1289',
+    '    ': 'tab!',
     'for': '\u1290',
     'while': '\u1291',
     ':': '\u1292',
@@ -40,30 +40,50 @@ word_to_token = {
     'return': '\u1320',
     'try': '\u1321',
     'with': '\u1322',
-    'yield': '\u1323'
+    'yield': '\u1323',
 }
 
 token_to_word = {v: k for k, v in word_to_token.items()}
 
 
 def tokenize_file(string):
+
+    string.replace('    ', '\t')
+
+    str_index = 0
+    result = ''
     g = tokenize.tokenize(BytesIO(string.encode('utf-8')).readline)
-    result = []
     for toknum, tokval, _, _, _ in g:
-        try:
-            result.append((tokenize.NAME, word_to_token[tokval]))
-        except KeyError:
-            result.append((tokenize.NAME, tokval))
+        if toknum == 59:
+            continue
+        word_len = len(tokval)
 
-    print('here it is:')
-    print(tokenize.untokenize(result))
-    untokenize_file(tokenize.untokenize(result))
+        substr = string[str_index:str_index + word_len]
+        spaces_num = 0
+        while substr != tokval:
+            result += string[str_index]
+            str_index += 1
+            substr = string[str_index:str_index + word_len]
+            spaces_num += 1
+            if spaces_num == 4:
+                spaces_num = 0
+                result = result[:-4]
+                result += word_to_token['    ']
 
+        if toknum != tokenize.INDENT:
+            try:
+                result += word_to_token[tokval]
+            except KeyError:
+                result += tokval
+            finally:
+                str_index += word_len
+
+    print(result)
+    print(untokenize_file(result))
+    
 
 def untokenize_file(string):
-    g = tokenize.tokenize(BytesIO(string.encode('utf-8')).readline)
-    result = []
     for t in token_to_word:
         string = string.replace(t, token_to_word[t])
 
-    print("and back:" + string)
+    return string
