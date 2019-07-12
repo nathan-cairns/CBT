@@ -22,15 +22,6 @@ EPOCHS = 10
 # FUNCTIONS #
 
 
-test = '''
-for i, mum in enumerate(this_list):
-    print("if only")
-    while True:
-        console.log("while if and")
-    hi.hey
-'''
-
-
 def get_as_file(file_paths):
     to_return = ''
     files_not_found = 0
@@ -39,9 +30,7 @@ def get_as_file(file_paths):
     for file_path in file_paths:
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
-                # tokeized = tokenize_file(f.read())
-                tokeized = tokenize_file(test)
-
+                to_return += tokenize_file(f.read())
         except (FileNotFoundError, UnicodeDecodeError):
             files_not_found += 1
             progress_bar.increment_errors()

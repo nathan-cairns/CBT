@@ -7,7 +7,7 @@ word_to_token = {
     'eof': '\u1286',
     'if': '\u1287',
     '\n': '\u1288',
-    '    ': 'tab!',
+    '    ': '\u1289',
     'for': '\u1290',
     'while': '\u1291',
     ':': '\u1292',
@@ -40,16 +40,13 @@ word_to_token = {
     'return': '\u1320',
     'try': '\u1321',
     'with': '\u1322',
-    'yield': '\u1323',
+    'yield': '\u1323'
 }
 
 token_to_word = {v: k for k, v in word_to_token.items()}
 
 
 def tokenize_file(string):
-
-    string.replace('    ', '\t')
-
     str_index = 0
     result = ''
     g = tokenize.tokenize(BytesIO(string.encode('utf-8')).readline)
@@ -78,12 +75,15 @@ def tokenize_file(string):
             finally:
                 str_index += word_len
 
-    print(result)
-    print(untokenize_file(result))
-    
+    return result + word_to_token['eof']
+
 
 def untokenize_file(string):
     for t in token_to_word:
         string = string.replace(t, token_to_word[t])
 
     return string
+
+
+def split_tokenized_files(string):
+    return string.split(word_to_token['eof'])
