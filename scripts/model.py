@@ -7,12 +7,14 @@ import time
 import iteratortools as it
 from programtokenizer import *
 import sys
+import tokenize
 
 # https://www.tensorflow.org/beta/tutorials/text/text_generation
 
 
 # CONSTANTS #
 
+ERROR_LOG_FILE = os.path.join(it.ERROR_LOG_PATH, 'modelload.csv')
 
 BATCH_SIZE = 64
 BUFFER_SIZE = 10000
@@ -32,8 +34,9 @@ def get_as_file(file_paths):
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
                 to_return += tokenize_file(f.read())
-        except (FileNotFoundError, UnicodeDecodeError):
+        except (FileNotFoundError, UnicodeDecodeError, tokenize.TokenError) as e:
             files_not_found += 1
+            it.handle_exception(ERROR_LOG_FILE, file_path, 'Unluggy', e)
             progress_bar.increment_errors()
         finally:
             progress_bar.increment_work()
