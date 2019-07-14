@@ -97,13 +97,14 @@ def generate_text(model, start_string):
 
         text_generated.append(index_to_token[predicted_id])
 
-    return start_string + ''.join(text_generated)
+    return untokenize_string(start_string + ''.join(text_generated))
 
 
 # MAIN METHOD #
 
 
 if __name__ == '__main__':
+
     print('Scanning contents of files into memory')
     file_paths = it.get_file_paths()
     text = get_as_file(file_paths[:10000])

@@ -1,7 +1,5 @@
 import tokenize
-import os
 from io import BytesIO
-import iteratortools as it
 
 word_to_token = {
     'eof': '\u1286',
@@ -78,7 +76,7 @@ def tokenize_file(string):
     return result + word_to_token['eof']
 
 
-def untokenize_file(string):
+def untokenize_string(string):
     for t in token_to_word:
         string = string.replace(t, token_to_word[t])
 
