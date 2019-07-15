@@ -33,8 +33,7 @@ def get_as_file(file_paths):
     for file_path in file_paths:
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
-                to_return += tokenize_file(text1)
-                #to_return += tokenize_file(f.read())
+                to_return += tokenize_file(f.read())
         except Exception as e:
             files_not_found += 1
             it.handle_exception(ERROR_LOG_FILE, file_path, 'Unluggy', e)
@@ -103,14 +102,6 @@ def generate_text(model, start_string, num_generate):
 
 # MAIN METHOD #
 
-
-text1 = '''
-for i in list:
-    print(i)
-while i % 2 == 0:
-    i -= 1
-print("done overall")
-'''
 
 if __name__ == '__main__':
 
