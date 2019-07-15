@@ -146,8 +146,6 @@ def tokenize_file(string):
         if in_tokenized_statement and tokval == ':':
             in_tokenized_statement = False
             in_class_or_def = False
-            str_index += 1
-            continue
 
         if tokval == 'class' or tokval == 'def':
             in_class_or_def = True
@@ -157,6 +155,7 @@ def tokenize_file(string):
             str_index += 1
             continue
 
+        # TODO: remove the indenting token
         if toknum == tokenize.DEDENT:
             result += word_to_token['dedent']
         elif toknum == tokenize.INDENT:
@@ -187,8 +186,9 @@ def untokenize_string(string):
                 line = line[1:]
         indents = ''.join('    ' for _ in range(indent_level))
         formatted_line = indents + line
-
+        # TODO: recreate brackets and commas
         formatted += formatted_line + '\n'
+
 
     for t in token_to_word:
         formatted = formatted.replace(t, token_to_word[t])
