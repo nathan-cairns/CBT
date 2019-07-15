@@ -25,6 +25,19 @@ EPOCHS = 10
 # FUNCTIONS #
 
 
+text = '''
+class hi:
+    def my_func(j, k, l):
+        for i in range(5):
+            while j < 3:
+                try:
+                    j += 3
+                except Exception as e:
+                    j -= 1
+        
+'''
+
+
 def get_as_file(file_paths):
     to_return = ''
     files_not_found = 0
@@ -34,6 +47,7 @@ def get_as_file(file_paths):
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
                 to_return += tokenize_file(f.read())
+                #to_return += tokenize_file(text)
         except Exception as e:
             files_not_found += 1
             it.handle_exception(ERROR_LOG_FILE, file_path, 'Unluggy', e)

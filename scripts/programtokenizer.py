@@ -1,4 +1,5 @@
 import tokenize
+import re
 from io import BytesIO
 
 word_to_token = {
@@ -116,9 +117,12 @@ token_to_word = {v: k for k, v in word_to_token.items()}
 
 
 def tokenize_file(string):
+    print (string)
     str_index = 0
     result = ''
     g = tokenize.tokenize(BytesIO(string.encode('utf-8')).readline)
+    in_tokenized_statement = False
+    in_class_or_def = False
     for toknum, tokval, _, _, _ in g:
         if toknum == 59:
             continue
@@ -136,6 +140,23 @@ def tokenize_file(string):
                 result = result[:-4]
                 # result += word_to_token['    ']
 
+        if (tokval == 'if' or tokval == 'while' or tokval == 'try' or tokval == 'class' or tokval == 'def' or
+                tokval == 'for' or tokval == 'except' or tokval == 'finally' or tokval == 'elif' or tokval == 'else'):
+            in_tokenized_statement = True
+        if in_tokenized_statement and tokval == ':':
+            in_tokenized_statement = False
+            in_class_or_def = False
+            str_index += 1
+            continue
+
+        if tokval == 'class' or tokval == 'def':
+            in_class_or_def = True
+
+        if in_tokenized_statement and in_class_or_def and (tokval == '(' or tokval == ')' or tokval == ','):
+            result += ' '
+            str_index += 1
+            continue
+
         if toknum == tokenize.DEDENT:
             result += word_to_token['dedent']
         elif toknum == tokenize.INDENT:
@@ -150,7 +171,6 @@ def tokenize_file(string):
 
     print(result)
     print(untokenize_string(result))
-
     return result + word_to_token['eof']
 
 
@@ -162,12 +182,13 @@ def untokenize_string(string):
             indent_level += 1
             line = line[1:]
         elif line.startswith(word_to_token['dedent']):
-            indent_level -= 1
-            line = line[1:]
+            while line.startswith(word_to_token['dedent']):
+                indent_level -= 1
+                line = line[1:]
         indents = ''.join('    ' for _ in range(indent_level))
-        line = indents + line
+        formatted_line = indents + line
 
-        formatted += line + '\n'
+        formatted += formatted_line + '\n'
 
     for t in token_to_word:
         formatted = formatted.replace(t, token_to_word[t])
