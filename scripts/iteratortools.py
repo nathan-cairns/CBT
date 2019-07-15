@@ -38,12 +38,13 @@ def get_output_data_path(file_path):
     return os.path.join(DATA_PATH, 'data_cfg' + file_path[4:])
 
 
-def get_file_paths():
+def get_file_paths(training_only=False):
     content = []
     with open(TRAINING_SET_FILE_PATH, encoding='utf8') as f:
         content += f.readlines()
-    with open(EVALUATION_SET_FILE_PATH, encoding='utf8') as f:
-        content += f.readlines()
+    if not training_only:
+        with open(EVALUATION_SET_FILE_PATH, encoding='utf8') as f:
+            content += f.readlines()
     return [line.strip() for line in content if os.path.basename(line.strip()) != '__init__.py']
 
 
@@ -53,6 +54,8 @@ def get_cfg_file_paths():
 
 
 def handle_exception(error_log_file_path, file_path, message, stacktrace):
+    if not os.path.exists(ERROR_LOG_PATH):
+        os.makedirs(ERROR_LOG_PATH)
     with open(error_log_file_path, 'a+', encoding='utf8') as f:
         f.write('\r{},{},{},{}\n'.format(str(datetime.datetime.now()), message, file_path, stacktrace))
 
