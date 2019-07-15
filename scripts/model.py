@@ -34,7 +34,7 @@ def get_as_file(file_paths):
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
                 to_return += tokenize_file(f.read())
-        except (FileNotFoundError, UnicodeDecodeError, tokenize.TokenError) as e:
+        except Exception as e:
             files_not_found += 1
             it.handle_exception(ERROR_LOG_FILE, file_path, 'Unluggy', e)
             progress_bar.increment_errors()
@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     print('Scanning contents of files into memory')
     file_paths = it.get_file_paths()
-    text = get_as_file(file_paths[:10000])
+    text = get_as_file(file_paths[:100])
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))  # TODO: tokenize smarter
     print('{} unique tokens'.format(len(vocab)))
