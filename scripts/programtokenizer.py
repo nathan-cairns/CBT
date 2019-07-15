@@ -38,7 +38,9 @@ word_to_token = {
     'return': '\u1320',
     'try': '\u1321',
     'with': '\u1322',
-    'yield': '\u1323'
+    'yield': '\u1323',
+    'dedent': '\u1324',
+    'indent': '\u1325'
 }
 
 token_to_word = {v: k for k, v in word_to_token.items()}
@@ -63,9 +65,13 @@ def tokenize_file(string):
             if spaces_num == 4:
                 spaces_num = 0
                 result = result[:-4]
-                result += word_to_token['    ']
+                # result += word_to_token['    ']
 
-        if toknum != tokenize.INDENT:
+        if toknum == tokenize.DEDENT:
+            result += word_to_token['dedent']
+        elif toknum == tokenize.INDENT:
+            result += word_to_token['indent']
+        else:
             try:
                 result += word_to_token[tokval]
             except KeyError:
@@ -73,14 +79,31 @@ def tokenize_file(string):
             finally:
                 str_index += word_len
 
+    print(result)
+    print(untokenize_string(result))
+
     return result + word_to_token['eof']
 
 
 def untokenize_string(string):
-    for t in token_to_word:
-        string = string.replace(t, token_to_word[t])
+    formatted = ''
+    indent_level = 0
+    for line in string.split(word_to_token['\n']):
+        if line.startswith(word_to_token['indent']):
+            indent_level += 1
+            line = line[1:]
+        elif line.startswith(word_to_token['dedent']):
+            indent_level -= 1
+            line = line[1:]
+        indents = ''.join('    ' for _ in range(indent_level))
+        line = indents + line
 
-    return string
+        formatted += line + '\n'
+
+    for t in token_to_word:
+        formatted = formatted.replace(t, token_to_word[t])
+
+    return formatted
 
 
 def split_tokenized_files(string):

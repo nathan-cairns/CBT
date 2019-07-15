@@ -33,7 +33,8 @@ def get_as_file(file_paths):
     for file_path in file_paths:
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
-                to_return += tokenize_file(f.read())
+                to_return += tokenize_file(text1)
+                #to_return += tokenize_file(f.read())
         except Exception as e:
             files_not_found += 1
             it.handle_exception(ERROR_LOG_FILE, file_path, 'Unluggy', e)
@@ -65,11 +66,8 @@ def loss(labels, logits):
     return tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
 
 
-def generate_text(model, start_string):
+def generate_text(model, start_string, num_generate):
     # Evaluation step (generating text using the learned model)
-
-    # Number of characters to generate
-    num_generate = 10000
 
     # Converting our start string to numbers (vectorizing)
     input_eval = [token_to_index[s] for s in start_string]
@@ -106,11 +104,19 @@ def generate_text(model, start_string):
 # MAIN METHOD #
 
 
+text1 = '''
+for i in list:
+    print(i)
+while i % 2 == 0:
+    i -= 1
+print("done overall")
+'''
+
 if __name__ == '__main__':
 
     print('Scanning contents of files into memory')
     file_paths = it.get_file_paths()
-    text = get_as_file(file_paths[:100])
+    text = get_as_file(file_paths[:5])
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))  # TODO: tokenize smarter
     print('{} unique tokens'.format(len(vocab)))
@@ -168,4 +174,5 @@ if __name__ == '__main__':
         model = build_model(vocab_size, embedding_dimension, rnn_units, batch_size=1)
         model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
         model.build(tf.TensorShape([1, None]))
-        print(generate_text(model, start_string=u"import numpy as np\n"))
+        
+        print(generate_text(model, start_string=gen_start_string, num_generate=10))
