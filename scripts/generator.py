@@ -1,6 +1,13 @@
 import tensorflow as tf
 import model_maker
 import argparse
+import programtokenizer
+
+
+# CONSTANTS #
+
+
+NEW_LINE_TOKEN = programtokenizer.word_to_token['\n']
 
 
 # ARGPARSE #
@@ -12,12 +19,13 @@ parser.add_argument('vocab_size', help='The size of the vocabulary')
 parser.add_argument('--Cin', help='Provide input via the console')
 parser.add_argument('--Fin', help='Specify a python file to take as input')
 parser.add_argument('--Fout', help='Specify a file to output to')
+parser.add_argument('--lines', help='The number of lines to generater', type=int, choices=range(1,20))
 
 
 # FUNCTIONS #
 
 
-def generate_text(model, start_string, num_generate):
+def generate_text(model, start_string, num_lines):
     # Evaluation step (generating text using the learned model)
 
     # Converting our start string to numbers (vectorizing)
@@ -34,7 +42,9 @@ def generate_text(model, start_string, num_generate):
 
     # Here batch size == 1
     model.reset_states()
-    for i in range(num_generate):
+
+    new_lines = 0
+    while new_lines != num_lines:
         predictions = model(input_eval)
         # remove the batch dimension
         predictions = tf.squeeze(predictions, 0)
@@ -47,9 +57,13 @@ def generate_text(model, start_string, num_generate):
         # along with the previous hidden state
         input_eval = tf.expand_dims([predicted_id], 0)
 
-        text_generated.append(index_to_token[predicted_id])
+        generated_character = index_to_token[predicted_id]
+        text_generated.append(generated_character)
 
-    return untokenize_string(start_string + ''.join(text_generated))
+        if generated_character == NEW_LINE_TOKEN:
+            new_lines = new_lines + 1
+
+    return programtokenizer.untokenize_string(start_string + ''.join(text_generated))
 
 
 # MAIN #
@@ -63,6 +77,7 @@ if __name__ == '__main__':
     input_dir = args.Fin
     output_dir = args.Fout
     console_input = args.Cin
+    num_lines = args.lines
     gen_start_string = ''
 
     # Build the model
@@ -84,7 +99,7 @@ if __name__ == '__main__':
         parser.error('No input method specified')
 
     # Generate output
-    generated_text = generate_text(model, start_string=gen_start_string, num_generate=10)
+    generated_text = generate_text(model, start_string=gen_start_string, num_lines=num_lines)
 
     if (output_dir):
         print("Outputing to file {}".format(output_dir))
