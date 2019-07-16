@@ -52,5 +52,5 @@ optional arguments:
   --Fin FIN             Specify a python file to take as input
   --Fout FOUT           Specify a file to output to
   --lines {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19, 20}
-                        The number of lines to generate
+                        The number of lines to generate, the default is 1
 ```
