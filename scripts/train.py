@@ -1,3 +1,6 @@
+# https://www.tensorflow.org/beta/tutorials/text/text_generation
+
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
@@ -8,11 +11,11 @@ import iteratortools as it
 from programtokenizer import *
 import sys
 import tokenize
-
-# https://www.tensorflow.org/beta/tutorials/text/text_generation
+import model_maker
 
 
 # CONSTANTS #
+
 
 ERROR_LOG_FILE = os.path.join(it.ERROR_LOG_PATH, 'modelload.csv')
 
@@ -23,19 +26,6 @@ EPOCHS = 10
 
 
 # FUNCTIONS #
-
-
-text = '''
-class hi:
-    def my_func(j, k, l):
-        for i in range(5):
-            while j < 3:
-                try:
-                    j += 3
-                except Exception as e:
-                    j -= 1
-        
-'''
 
 
 def get_as_file(file_paths):
@@ -66,59 +56,14 @@ def split_input_target(chunk):
     return input_text, target_text
 
 
-def build_model(vocab_size, embedding_dim, rnn_units, batch_size):
-    model = tf.keras.Sequential([
-        tf.keras.layers.Embedding(vocab_size, embedding_dim, batch_input_shape=[batch_size, None]),
-        tf.keras.layers.LSTM(rnn_units, return_sequences=True, stateful=True, recurrent_initializer='glorot_uniform'),
-        tf.keras.layers.Dense(vocab_size)
-    ])
-    return model
-
-
 def loss(labels, logits):
     return tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
-
-
-def generate_text(model, start_string, num_generate):
-    # Evaluation step (generating text using the learned model)
-
-    # Converting our start string to numbers (vectorizing)
-    input_eval = [token_to_index[s] for s in start_string]
-    input_eval = tf.expand_dims(input_eval, 0)
-
-    # Empty string to store our results
-    text_generated = []
-
-    # Low temperatures results in more predictable text.
-    # Higher temperatures results in more surprising text.
-    # Experiment to find the best setting.
-    temperature = 1.0
-
-    # Here batch size == 1
-    model.reset_states()
-    for i in range(num_generate):
-        predictions = model(input_eval)
-        # remove the batch dimension
-        predictions = tf.squeeze(predictions, 0)
-
-        # using a categorical distribution to predict the word returned by the model
-        predictions = predictions / temperature
-        predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
-
-        # We pass the predicted word as the next input to the model
-        # along with the previous hidden state
-        input_eval = tf.expand_dims([predicted_id], 0)
-
-        text_generated.append(index_to_token[predicted_id])
-
-    return untokenize_string(start_string + ''.join(text_generated))
 
 
 # MAIN METHOD #
 
 
 if __name__ == '__main__':
-
     print('Scanning contents of files into memory')
     file_paths = it.get_file_paths()
     text = get_as_file(file_paths[:5])
@@ -143,13 +88,10 @@ if __name__ == '__main__':
 
     # Model:
     vocab_size = len(vocab)
-    embedding_dimension = 256
-    rnn_units = 1024
-
-    model = build_model(
+    model = model_maker.build_model(
         vocab_size=len(vocab),
-        embedding_dim=embedding_dimension,
-        rnn_units=rnn_units,
+        embedding_dim=model_maker.EMBEDDING_DIMENSION,
+        rnn_units=model_maker.RNN_UNITS,
         batch_size=BATCH_SIZE
     )
 
@@ -173,11 +115,4 @@ if __name__ == '__main__':
         save_weights_only=True
     )
 
-    if len(sys.argv) == 1:
-        history = model.fit(dataset, epochs=EPOCHS, callbacks=[checkpoint_callback])
-    else:
-        model = build_model(vocab_size, embedding_dimension, rnn_units, batch_size=1)
-        model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
-        model.build(tf.TensorShape([1, None]))
-        
-        print(generate_text(model, start_string=gen_start_string, num_generate=10))
+    history = model.fit(dataset, epochs=EPOCHS, callbacks=[checkpoint_callback])
