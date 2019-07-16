@@ -19,7 +19,7 @@ parser.add_argument('vocab_size', help='The size of the vocabulary')
 parser.add_argument('--Cin', help='Provide input via the console')
 parser.add_argument('--Fin', help='Specify a python file to take as input')
 parser.add_argument('--Fout', help='Specify a file to output to')
-parser.add_argument('--lines', help='The number of lines to generater', type=int, choices=range(1,20))
+parser.add_argument('--lines', help='The number of lines to generate', type=int, choices=range(1,21))
 
 
 # FUNCTIONS #
