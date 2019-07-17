@@ -1,6 +1,6 @@
-# CBT (Code Brocard Transformation)
+# CBT (Code By Tensors)
 
-This project aims to transform a *control flow graph* (CFG), to valid and equivalent python code using machine learning methods. The CFG may be abstracted to some extent.
+This project aims to automatically generate code using LSTMs.
 
 This repository contains scripts for preparing training data as well as training machine learning models.
 
@@ -22,4 +22,35 @@ CBT
 
 ```
 4. Run ``python setup.py install``
-5. ...
+
+## Usage
+### Generator
+The generator can be used to generate a number of lines of code based on a seed sequence.
+
+The generator requires the following arguments:
+* The location of a model file (the latest checkpoint from training)
+* The size of the vocabulary
+* An input method (either from console or from file)
+
+A full summary of arguments is provided below:
+```
+python3 scripts/generator.py --help
+
+usage: CBT [-h] [--Cin CIN] [--Fin FIN] [--Fout FOUT]
+           [--lines {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19, 20}]
+           checkpoint_dir vocab_size
+
+Automatically Generate Code
+
+positional arguments:
+  checkpoint_dir        The directory of the most recent training checkpoint
+  vocab_size            The size of the vocabulary
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --Cin CIN             Provide input via the console
+  --Fin FIN             Specify a python file to take as input
+  --Fout FOUT           Specify a file to output to
+  --lines {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19, 20}
+                        The number of lines to generate, the default is 1
+```
