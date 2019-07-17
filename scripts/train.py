@@ -12,6 +12,7 @@ from programtokenizer import *
 import sys
 import tokenize
 import model_maker
+import json
 
 
 # CONSTANTS #
@@ -21,6 +22,8 @@ ERROR_LOG_FILE = os.path.join(it.ERROR_LOG_PATH, 'modelload.csv')
 
 BATCH_SIZE = 64
 BUFFER_SIZE = 10000
+CHECKPOINT_DIR = os.path.join('.', 'training_checkpoints')
+WORD_TO_INDEX_FILE = 'word_to_index.json'
 
 EPOCHS = 10
 
@@ -60,19 +63,26 @@ def loss(labels, logits):
     return tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
 
 
+def write_index(index):
+    if not os.path.exists(CHECKPOINT_DIR):
+        os.makedirs(CHECKPOINT_DIR)
+    with open(os.path.join(CHECKPOINT_DIR, WORD_TO_INDEX_FILE), 'w') as fp:
+        json.dump(index, fp)
+
 # MAIN METHOD #
 
 
 if __name__ == '__main__':
     print('Scanning contents of files into memory')
     file_paths = it.get_file_paths()
-    text = get_as_file(file_paths[:5])
+    text = get_as_file(file_paths[:10])
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))  # TODO: tokenize smarter
     print('{} unique tokens'.format(len(vocab)))
 
     token_to_index = {t: i for i, t in enumerate(vocab)}
     index_to_token = np.array(vocab)
+    write_index(token_to_index)
 
     text_as_int = np.array([token_to_index[t] for t in text])
 
@@ -107,9 +117,7 @@ if __name__ == '__main__':
     model.compile(optimizer='adam', loss=loss)
 
     # Checkpoints:
-    checkpoint_dir = os.path.join('.', 'training_checkpoints')
-    checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt_{epoch}")
-
+    checkpoint_prefix = os.path.join(CHECKPOINT_DIR, "ckpt_{epoch}")
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_prefix,
         save_weights_only=True
