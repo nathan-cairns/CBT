@@ -2,6 +2,9 @@ import tensorflow as tf
 import model_maker
 import argparse
 import programtokenizer
+import json
+import train
+import os
 
 
 # CONSTANTS #
@@ -15,7 +18,7 @@ NEW_LINE_TOKEN = programtokenizer.word_to_token['\n']
 
 parser = argparse.ArgumentParser(description='Automatically Generate Code', prog='CBT')
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
-parser.add_argument('vocab_size', help='The size of the vocabulary')
+parser.add_argument('vocab_size', help='The size of the vocabulary', type=int)
 parser.add_argument('--Cin', help='Provide input via the console')
 parser.add_argument('--Fin', help='Specify a python file to take as input')
 parser.add_argument('--Fout', help='Specify a file to output to')
@@ -29,39 +32,44 @@ def generate_text(model, start_string, num_lines):
     # Evaluation step (generating text using the learned model)
 
     # Converting our start string to numbers (vectorizing)
-    input_eval = [token_to_index[s] for s in start_string]
-    input_eval = tf.expand_dims(input_eval, 0)
+    with open(os.path.join(train.CHECKPOINT_DIR, train.WORD_TO_INDEX_FILE)) as json_file:
+        index_to_token = json.load(json_file)
+        token_to_index = {t: i for i, t in index_to_token.items()}
 
-    # Empty string to store our results
-    text_generated = []
+        input_eval = [index_to_token[s] for s in start_string]
+        input_eval = tf.expand_dims(input_eval, 0)
 
-    # Low temperatures results in more predictable text.
-    # Higher temperatures results in more surprising text.
-    # Experiment to find the best setting.
-    temperature = 1.0
+        # Empty string to store our results
+        text_generated = []
 
-    # Here batch size == 1
-    model.reset_states()
+        # Low temperatures results in more predictable text.
+        # Higher temperatures results in more surprising text.
+        # Experiment to find the best setting.
+        temperature = 1.0
 
-    new_lines = 0
-    while new_lines != num_lines:
-        predictions = model(input_eval)
-        # remove the batch dimension
-        predictions = tf.squeeze(predictions, 0)
+        # Here batch size == 1
+        model.reset_states()
 
-        # using a categorical distribution to predict the word returned by the model
-        predictions = predictions / temperature
-        predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
+        new_lines = 0
 
-        # We pass the predicted word as the next input to the model
-        # along with the previous hidden state
-        input_eval = tf.expand_dims([predicted_id], 0)
+        while new_lines != num_lines:
+            predictions = model(input_eval)
+            # remove the batch dimension
+            predictions = tf.squeeze(predictions, 0)
 
-        generated_character = index_to_token[predicted_id]
-        text_generated.append(generated_character)
+            # using a categorical distribution to predict the word returned by the model
+            predictions = predictions / temperature
+            predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
 
-        if generated_character == NEW_LINE_TOKEN:
-            new_lines = new_lines + 1
+            # We pass the predicted word as the next input to the model
+            # along with the previous hidden state
+            input_eval = tf.expand_dims([predicted_id], 0)
+
+            generated_character = token_to_index[predicted_id]
+            text_generated.append(generated_character)
+
+            if generated_character == NEW_LINE_TOKEN:
+                new_lines = new_lines + 1
 
     return programtokenizer.untokenize_string(start_string + ''.join(text_generated))
 
@@ -106,4 +114,4 @@ if __name__ == '__main__':
         with open(output_dir, 'w') as f:
             f.write(generated_text)
     else:
-        print(generate_text)
+        print(generated_text)

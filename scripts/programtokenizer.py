@@ -117,7 +117,7 @@ token_to_word = {v: k for k, v in word_to_token.items()}
 
 
 def tokenize_file(string):
-    print (string)
+    #print (string)
     str_index = 0
     result = ''
     g = tokenize.tokenize(BytesIO(string.encode('utf-8')).readline)
@@ -168,8 +168,8 @@ def tokenize_file(string):
             finally:
                 str_index += word_len
 
-    print(result)
-    print(untokenize_string(result))
+    #print(result)
+    #print(untokenize_string(result))
     return result + word_to_token['eof']
 
 
