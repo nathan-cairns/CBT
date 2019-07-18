@@ -117,11 +117,9 @@ token_to_word = {v: k for k, v in word_to_token.items()}
 
 
 def tokenize_file(string):
-    #print (string)
     str_index = 0
     result = ''
     g = tokenize.tokenize(BytesIO(string.encode('utf-8')).readline)
-    in_tokenized_statement = False
     in_class_or_def = False
     for toknum, tokval, _, _, _ in g:
         if toknum == 59:
@@ -140,17 +138,11 @@ def tokenize_file(string):
                 result = result[:-4]
                 # result += word_to_token['    ']
 
-        if (tokval == 'if' or tokval == 'while' or tokval == 'try' or tokval == 'class' or tokval == 'def' or
-                tokval == 'for' or tokval == 'except' or tokval == 'finally' or tokval == 'elif' or tokval == 'else'):
-            in_tokenized_statement = True
-        if in_tokenized_statement and tokval == ':':
-            in_tokenized_statement = False
+        if tokval == ':':
             in_class_or_def = False
-
         if tokval == 'class' or tokval == 'def':
             in_class_or_def = True
-
-        if in_tokenized_statement and in_class_or_def and (tokval == '(' or tokval == ')' or tokval == ','):
+        if in_class_or_def and (tokval == '(' or tokval == ')' or tokval == ','):
             result += ' '
             str_index += 1
             continue
@@ -168,12 +160,38 @@ def tokenize_file(string):
             finally:
                 str_index += word_len
 
-    #print(result)
-    #print(untokenize_string(result))
     return result + word_to_token['eof']
 
 
 def untokenize_string(string):
+    def remove_all(array, item):
+        while item in array:
+            array.remove(item)
+        return array
+
+    def apply_syntax(raw_tokens):
+        if len(raw_tokens) is 0:
+            return
+        name = raw_tokens[0]
+        if len(raw_tokens) is 1:
+            return name
+        params = raw_tokens[1:]
+        new_params_str = ''
+        for i, param in enumerate(params):
+            new_params_str += param
+            if i < len(params) - 1:
+                new_params_str += ', '
+        return name + '(' + new_params_str + ')'
+
+    class_re = re.compile(word_to_token['class'] + r'([\s\S]*?)' + word_to_token[':'] + word_to_token['\n'])
+    def_re = re.compile(word_to_token['def'] + r'([\s\S]*?)' + word_to_token[':'] + word_to_token['\n'])
+    for match in re.findall(class_re, string):
+        raw = remove_all(match.split(' '), '')
+        string = string.replace(match.strip(), apply_syntax(raw))
+    for match in re.findall(def_re, string):
+        raw = remove_all(match.split(' '), '')
+        string = string.replace(match.strip(), apply_syntax(raw))
+
     formatted = ''
     indent_level = 0
     for line in string.split(word_to_token['\n']):
@@ -186,9 +204,7 @@ def untokenize_string(string):
                 line = line[1:]
         indents = ''.join('    ' for _ in range(indent_level))
         formatted_line = indents + line
-        # TODO: recreate brackets and commas
         formatted += formatted_line + '\n'
-
 
     for t in token_to_word:
         formatted = formatted.replace(t, token_to_word[t])

@@ -40,7 +40,6 @@ def get_as_file(file_paths):
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
                 to_return += tokenize_file(f.read())
-                #to_return += tokenize_file(text)
         except Exception as e:
             files_not_found += 1
             it.handle_exception(ERROR_LOG_FILE, file_path, 'Unluggy', e)
@@ -69,6 +68,7 @@ def write_index(index):
     with open(os.path.join(CHECKPOINT_DIR, WORD_TO_INDEX_FILE), 'w') as fp:
         json.dump(index, fp)
 
+
 # MAIN METHOD #
 
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     file_paths = it.get_file_paths()
     text = get_as_file(file_paths)
     print('Length of text: {} characters'.format(len(text)))
-    vocab = sorted(set(text))  # TODO: tokenize smarter
+    vocab = sorted(set(text))
     print('{} unique tokens'.format(len(vocab)))
 
     token_to_index = {t: i for i, t in enumerate(vocab)}
