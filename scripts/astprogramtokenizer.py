@@ -17,25 +17,32 @@ for i in range(10):
         a.print_num()
 '''
 
+
+class Transformer(ast.NodeTransformer):
+    def __init__(self):
+        self.var_count = 0
+        self.visited = {}
+
+    def visit_Name(self, node: ast.Name):
+        # TODO: actually use utf8 tokens or something instead of v1, v2
+        if node.id not in self.visited:
+            var_name = 'v' + str(self.var_count)
+            self.visited[node.id] = var_name
+            self.var_count += 1
+        else:
+            var_name = self.visited[node.id]
+        return var_name
+
+
 class Analyzer(ast.NodeVisitor):
     def __init__(self):
-        self.stats = {"import": [], "from": [], "func": [], "var": []}
-
-    def visit_Import(self, node):
-        for alias in node.names:
-            self.stats["import"].append(alias.name)
-        self.generic_visit(node)
-
-    def visit_ImportFrom(self, node):
-        for alias in node.names:
-            self.stats["from"].append(alias.name)
-        self.generic_visit(node)
+        self.stats = {"var": []}
 
     def generic_visit(self, node):
         print(node.__class__.__name__)
         super().generic_visit(node)
 
-    def visit_Name(self, node):
+    def visit_Name(self, node: ast.Name):
         self.stats["var"].append(node.id)
         self.generic_visit(node)
 
