@@ -62,11 +62,11 @@ def loss(labels, logits):
     return tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
 
 
-def write_index(index):
+def write_index(index, vocab_size):
     if not os.path.exists(CHECKPOINT_DIR):
         os.makedirs(CHECKPOINT_DIR)
     with open(os.path.join(CHECKPOINT_DIR, WORD_TO_INDEX_FILE), 'w') as fp:
-        json.dump(index, fp)
+        json.dump({'index_to_token': index, 'vocab_size': vocab_size}, fp)
 
 
 # MAIN METHOD #
@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     token_to_index = {t: i for i, t in enumerate(vocab)}
     index_to_token = np.array(vocab)
-    write_index(token_to_index)
+    write_index(token_to_index, len(vocab))
 
     text_as_int = np.array([token_to_index[t] for t in text])
 

@@ -18,7 +18,6 @@ NEW_LINE_TOKEN = programtokenizer.word_to_token['\n']
 
 parser = argparse.ArgumentParser(description='Automatically Generate Code', prog='CBT')
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
-parser.add_argument('vocab_size', help='The size of the vocabulary', type=int)
 parser.add_argument('--Cin', help='Provide input via the console')
 parser.add_argument('--Fin', help='Specify a python file to take as input')
 parser.add_argument('--Fout', help='Specify a file to output to')
@@ -28,12 +27,11 @@ parser.add_argument('--lines', help='The number of lines to generate, the defaul
 # FUNCTIONS #
 
 
-def generate_text(model, start_string, num_lines):
+def generate_text(model, start_string, num_lines, index_to_token):
     # Evaluation step (generating text using the learned model)
 
     # Converting our start string to numbers (vectorizing)
     with open(os.path.join(train.CHECKPOINT_DIR, train.WORD_TO_INDEX_FILE)) as json_file:
-        index_to_token = json.load(json_file)
         token_to_index = {t: i for i, t in index_to_token.items()}
 
         input_eval = [index_to_token[s] for s in start_string]
@@ -80,7 +78,6 @@ def generate_text(model, start_string, num_lines):
 if __name__ == '__main__':
     # Parse arguments
     args = parser.parse_args()
-    vocab_size = args.vocab_size
     checkpoint_dir = args.checkpoint_dir
     input_dir = args.Fin
     output_dir = args.Fout
@@ -89,29 +86,32 @@ if __name__ == '__main__':
     gen_start_string = ''
 
     # Build the model
-    model = model_maker.build_model(vocab_size, model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
-    model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
-    model.build(tf.TensorShape([1, None]))
+    with open(os.path.join(train.CHECKPOINT_DIR, train.WORD_TO_INDEX_FILE)) as json_file:
+        state = json.load(json_file)
 
-    # Read input
-    if (input_dir and console_input):
-        parser.error('Please specify either --Fin or --Cin, not both')
+        model = model_maker.build_model(int(state.vocab_size), model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
+        model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+        model.build(tf.TensorShape([1, None]))
 
-    if (input_dir):
-        print('Taking input from file {}'.format(input_dir))
-        with open(input_dir, 'r') as f:
-            gen_start_string = f.read()
-    elif (console_input):
-        gen_start_string = console_input
-    else:
-        parser.error('No input method specified')
+        # Read input
+        if (input_dir and console_input):
+            parser.error('Please specify either --Fin or --Cin, not both')
 
-    # Generate output
-    generated_text = generate_text(model, start_string=gen_start_string, num_lines=num_lines)
+        if (input_dir):
+            print('Taking input from file {}'.format(input_dir))
+            with open(input_dir, 'r') as f:
+                gen_start_string = f.read()
+        elif (console_input):
+            gen_start_string = console_input
+        else:
+            parser.error('No input method specified')
 
-    if (output_dir):
-        print("Outputing to file {}".format(output_dir))
-        with open(output_dir, 'w') as f:
-            f.write(generated_text)
-    else:
-        print(generated_text)
+        # Generate output
+        generated_text = generate_text(model, gen_start_string, num_lines, state.index_to_token)
+
+        if (output_dir):
+            print("Outputing to file {}".format(output_dir))
+            with open(output_dir, 'w') as f:
+                f.write(generated_text)
+        else:
+            print(generated_text)
