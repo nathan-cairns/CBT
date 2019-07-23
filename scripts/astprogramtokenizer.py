@@ -31,7 +31,7 @@ class Transformer(ast.NodeTransformer):
             self.var_count += 1
         else:
             var_name = self.visited[node.id]
-        return var_name
+        return ast.copy_location(ast.Name(id=var_name), node)
 
 
 class Analyzer(ast.NodeVisitor):
@@ -53,6 +53,9 @@ class Analyzer(ast.NodeVisitor):
 if __name__ == '__main__':
     with open("C:\\Users\\Buster\\Documents\\Code\\CBT\\data\\py150_files\\data\\2gis\\badger-api\\common\\storage.py", "r") as source:
         tree = ast.parse(source.read())
+
+    transformer = Transformer()
+    transformer.visit(tree)
 
     analyzer = Analyzer()
     analyzer.visit(tree)
