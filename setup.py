@@ -8,7 +8,8 @@ setup(name='cbt',
       packages=['cbt'],
       install_requires=[
             'comment-filter',
-            'tensorflow==2.0.0-beta1'
+            'tensorflow==2.0.0-beta1',
+            'astunparse'
       ],
       dependency_links=[
             'https://github.com/codeauroraforum/comment-filter/tarball/master#egg=comment-filter-v1.0.0'
