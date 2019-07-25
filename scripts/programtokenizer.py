@@ -5,6 +5,9 @@ import ast
 import astunparse
 
 
+TOKEN_RANGE_START = 1286
+
+
 words = ['eof', 'if', '\n', '    ', 'for', 'while', ':', 'False', 'None', 'True', 'and', 'as', 'assert', 'break',
          'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'from', 'global', 'import', 'in', 'is',
          'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'with', 'yield', 'dedent', 'indent',
@@ -17,13 +20,17 @@ words = ['eof', 'if', '\n', '    ', 'for', 'while', ':', 'False', 'None', 'True'
 
 
 word_to_token = {}
-utf8char = 1286
+utf8char = TOKEN_RANGE_START
 for word in words:
     word_to_token[word] = chr(utf8char)
     utf8char += 1
-
+var_char_index = utf8char
 
 token_to_word = {v: k for k, v in word_to_token.items()}
+
+
+def get_var_char_index():
+    return var_char_index
 
 
 class NameTokenizer:
@@ -32,17 +39,17 @@ class NameTokenizer:
 
     class Transformer(ast.NodeTransformer):
         def __init__(self, start_token):
-            self.visited = {}
+            self.name_map = {}
             self.token_num = start_token
 
         def visit_Name(self, node: ast.Name):  # Needs to be capital 'N'
             # TODO: actually use utf8 tokens or something instead of v1, v2
-            if node.id not in self.visited:
+            if node.id not in self.name_map:
                 var_name = chr(self.token_num)
-                self.visited[node.id] = var_name
+                self.name_map[node.id] = var_name
                 self.token_num += 1
             else:
-                var_name = self.visited[node.id]
+                var_name = self.name_map[node.id]
             return ast.copy_location(ast.Name(id=var_name), node)
 
     def tokenize(self, program_as_string):
@@ -51,7 +58,7 @@ class NameTokenizer:
         transformer = NameTokenizer.Transformer(self.start_token)
         transformer.visit(tree)
 
-        return astunparse.unparse(tree)
+        return astunparse.unparse(tree), transformer.name_map
 
 
 class SyntaxTokenizer:
@@ -106,7 +113,7 @@ class SyntaxTokenizer:
 
 
 def tokenize_file(program_as_string):
-    variables_tokenized = NameTokenizer(utf8char).tokenize(program_as_string)
+    variables_tokenized, _ = NameTokenizer(utf8char).tokenize(program_as_string)
     syntax_tokenized = SyntaxTokenizer(word_to_token).tokenize(variables_tokenized)
     return syntax_tokenized
 
@@ -160,7 +167,21 @@ def untokenize_string(string, token_to_name):
     for t in token_to_name:
         formatted = formatted.replace(t, token_to_name[t])
 
-    return formatted
+    # Final assigning of unmapped variables to new temp variables
+    formatted = list(formatted)
+    temp_vars = {}
+    temp_num = 0
+    for i, char in enumerate(formatted):
+        if ord(char) >= TOKEN_RANGE_START:
+            if char not in temp_vars:
+                var_name = 'temp' + str(temp_num)
+                temp_vars[char] = var_name
+                temp_num += 1
+            else:
+                var_name = temp_vars[char]
+            formatted[i] = var_name
+
+    return ''.join(formatted)
 
 
 def split_tokenized_files(string):
