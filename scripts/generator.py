@@ -27,49 +27,51 @@ parser.add_argument('--lines', help='The number of lines to generate, the defaul
 # FUNCTIONS #
 
 
-def generate_text(model, start_string, num_lines, index_to_token):
+def generate_text(model, start_string, num_lines, index_to_token, var_char_index):
     # Evaluation step (generating text using the learned model)
+    name_tokenizer = programtokenizer.NameTokenizer(var_char_index)
+    start_string, variable_to_token = name_tokenizer.tokenize(start_string)
+    start_string = programtokenizer.SyntaxTokenizer(programtokenizer.word_to_token).tokenize(start_string)
 
     # Converting our start string to numbers (vectorizing)
-    with open(os.path.join(train.CHECKPOINT_DIR, train.WORD_TO_INDEX_FILE)) as json_file:
-        token_to_index = {t: i for i, t in index_to_token.items()}
+    token_to_index = {t: i for i, t in index_to_token.items()}
 
-        input_eval = [index_to_token[s] for s in start_string]
-        input_eval = tf.expand_dims(input_eval, 0)
+    input_eval = [index_to_token[s] for s in start_string]
+    input_eval = tf.expand_dims(input_eval, 0)
 
-        # Empty string to store our results
-        text_generated = []
+    # Empty string to store our results
+    text_generated = []
 
-        # Low temperatures results in more predictable text.
-        # Higher temperatures results in more surprising text.
-        # Experiment to find the best setting.
-        temperature = 1.0
+    # Low temperatures results in more predictable text.
+    # Higher temperatures results in more surprising text.
+    # Experiment to find the best setting.
+    temperature = 1.0
 
-        # Here batch size == 1
-        model.reset_states()
+    # Here batch size == 1
+    model.reset_states()
 
-        new_lines = 0
+    new_lines = 0
 
-        while new_lines != num_lines:
-            predictions = model(input_eval)
-            # remove the batch dimension
-            predictions = tf.squeeze(predictions, 0)
+    while new_lines != num_lines:
+        predictions = model(input_eval)
+        # remove the batch dimension
+        predictions = tf.squeeze(predictions, 0)
 
-            # using a categorical distribution to predict the word returned by the model
-            predictions = predictions / temperature
-            predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
+        # using a categorical distribution to predict the word returned by the model
+        predictions = predictions / temperature
+        predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
 
-            # We pass the predicted word as the next input to the model
-            # along with the previous hidden state
-            input_eval = tf.expand_dims([predicted_id], 0)
+        # We pass the predicted word as the next input to the model
+        # along with the previous hidden state
+        input_eval = tf.expand_dims([predicted_id], 0)
 
-            generated_character = token_to_index[predicted_id]
-            text_generated.append(generated_character)
+        generated_character = token_to_index[predicted_id]
+        text_generated.append(generated_character)
 
-            if generated_character == NEW_LINE_TOKEN:
-                new_lines = new_lines + 1
+        if generated_character == NEW_LINE_TOKEN:
+            new_lines = new_lines + 1
 
-    return programtokenizer.untokenize_string(start_string + ''.join(text_generated))
+    return programtokenizer.untokenize_string(start_string + ''.join(text_generated), {v: k for k, v in enumerate(variable_to_token)})
 
 
 # MAIN #
@@ -86,31 +88,31 @@ if __name__ == '__main__':
     gen_start_string = ''
 
     # Build the model
-    with open(os.path.join(train.CHECKPOINT_DIR, train.WORD_TO_INDEX_FILE)) as json_file:
+    with open(os.path.join(checkpoint_dir, train.WORD_TO_INDEX_FILE)) as json_file:
         state = json.load(json_file)
 
-        model = model_maker.build_model(int(state.vocab_size), model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
+        model = model_maker.build_model(int(state['vocab_size']), model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
         model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
         model.build(tf.TensorShape([1, None]))
 
         # Read input
-        if (input_dir and console_input):
+        if input_dir and console_input:
             parser.error('Please specify either --Fin or --Cin, not both')
 
-        if (input_dir):
+        if input_dir:
             print('Taking input from file {}'.format(input_dir))
             with open(input_dir, 'r') as f:
                 gen_start_string = f.read()
-        elif (console_input):
+        elif console_input:
             gen_start_string = console_input
         else:
             parser.error('No input method specified')
 
         # Generate output
-        generated_text = generate_text(model, gen_start_string, num_lines, state.index_to_token)
+        generated_text = generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
 
-        if (output_dir):
-            print("Outputing to file {}".format(output_dir))
+        if output_dir:
+            print("Outputting to file {}".format(output_dir))
             with open(output_dir, 'w') as f:
                 f.write(generated_text)
         else:
