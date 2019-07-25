@@ -1,6 +1,9 @@
 import tokenize
 import re
 from io import BytesIO
+import ast
+import astunparse
+
 
 words = ['eof', 'if', '\n', '    ', 'for', 'while', ':', 'False', 'None', 'True', 'and', 'as', 'assert', 'break',
          'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'from', 'global', 'import', 'in', 'is',
@@ -23,51 +26,87 @@ for word in words:
 token_to_word = {v: k for k, v in word_to_token.items()}
 
 
-def tokenize_file(string):
-    str_index = 0
-    result = ''
-    g = tokenize.tokenize(BytesIO(string.encode('utf-8')).readline)
-    in_class_or_def = False
-    for toknum, tokval, _, _, _ in g:
-        if toknum == 59:
-            continue
-        word_len = len(tokval)
+class NameTokenizer:
+    class Transformer(ast.NodeTransformer):
+        def __init__(self):
+            self.var_count = 0
+            self.visited = {}
 
-        substr = string[str_index:str_index + word_len]
-        spaces_num = 0
-        while substr != tokval:
-            result += string[str_index]
-            str_index += 1
-            substr = string[str_index:str_index + word_len]
-            spaces_num += 1
-            if spaces_num == 4:
-                spaces_num = 0
-                result = result[:-4]
-                # result += word_to_token['    ']
+        def visit_Name(self, node: ast.Name):  # Needs to be capital 'N'
+            # TODO: actually use utf8 tokens or something instead of v1, v2
+            if node.id not in self.visited:
+                var_name = 'v' + str(self.var_count)
+                self.visited[node.id] = var_name
+                self.var_count += 1
+            else:
+                var_name = self.visited[node.id]
+            return ast.copy_location(ast.Name(id=var_name), node)
 
-        if tokval == ':':
-            in_class_or_def = False
-        if tokval == 'class' or tokval == 'def':
-            in_class_or_def = True
-        if in_class_or_def and (tokval == '(' or tokval == ')' or tokval == ','):
-            result += ' '
-            str_index += 1
-            continue
+    @staticmethod
+    def tokenize(program_as_string):
+        tree = ast.parse(program_as_string)
 
-        # TODO: remove the indenting token
-        if toknum == tokenize.DEDENT:
-            result += word_to_token['dedent']
-        elif toknum == tokenize.INDENT:
-            result += word_to_token['indent']
-        else:
-            try:
-                result += word_to_token[tokval]
-            except KeyError:
-                result += tokval
-            finally:
-                str_index += word_len
+        transformer = NameTokenizer.Transformer()
+        transformer.visit(tree)
 
-    return result + word_to_token['eof']
+        return astunparse.unparse(tree)
+
+
+class SyntaxTokenizer:
+    @staticmethod
+    def tokenize(program_as_string):
+        str_index = 0
+        result = ''
+        g = tokenize.tokenize(BytesIO(program_as_string.encode('utf-8')).readline)
+        in_class_or_def = False
+        for toknum, tokval, _, _, _ in g:
+            if toknum == 59:
+                continue
+            word_len = len(tokval)
+
+            substr = program_as_string[str_index:str_index + word_len]
+            spaces_num = 0
+            while substr != tokval:
+                result += program_as_string[str_index]
+                str_index += 1
+                substr = program_as_string[str_index:str_index + word_len]
+                spaces_num += 1
+                if spaces_num == 4:
+                    spaces_num = 0
+                    result = result[:-4]
+                    # result += word_to_token['    ']
+
+            if tokval == ':':
+                in_class_or_def = False
+            if tokval == 'class' or tokval == 'def':
+                in_class_or_def = True
+            if in_class_or_def and (tokval == '(' or tokval == ')' or tokval == ','):
+                result += ' '
+                str_index += 1
+                continue
+
+            # TODO: remove the indenting token
+            if toknum == tokenize.DEDENT:
+                result += word_to_token['dedent']
+            elif toknum == tokenize.INDENT:
+                result += word_to_token['indent']
+            else:
+                try:
+                    result += word_to_token[tokval]
+                except KeyError:
+                    result += tokval
+                finally:
+                    str_index += word_len
+
+        return result
+
+
+def tokenize_file(program_as_string):
+    variables_done = NameTokenizer.tokenize(program_as_string)
+    print(variables_done)
+    syntax_done = SyntaxTokenizer.tokenize(variables_done)
+    print(syntax_done)
+    return syntax_done
 
 
 def untokenize_string(string):

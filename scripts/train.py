@@ -75,7 +75,7 @@ def write_index(index, vocab_size):
 if __name__ == '__main__':
     print('Scanning contents of files into memory')
     file_paths = it.get_file_paths()
-    text = get_as_file(file_paths)
+    text = get_as_file(file_paths[:5])
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))
     print('{} unique tokens'.format(len(vocab)))
