@@ -13,7 +13,7 @@ words = ['eof', 'if', '\n', '    ', 'for', 'while', ':', 'False', 'None', 'True'
          'frozenset', 'getattr', 'globals', 'hasattr', 'hash', 'help', 'hex', 'id', 'input', 'int', 'isinstance',
          'issubclass', 'iter', 'len', 'list', 'locals', 'map', 'max', 'memoryview', 'min', 'next', 'object', 'oct',
          'open', 'ord', 'pow', 'print', 'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice',
-         'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip', '__import__']
+         'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip', '__import__', 'self']
 
 
 word_to_token = {}
@@ -27,34 +27,38 @@ token_to_word = {v: k for k, v in word_to_token.items()}
 
 
 class NameTokenizer:
+    def __init__(self, start_token):
+        self.start_token = start_token
+
     class Transformer(ast.NodeTransformer):
-        def __init__(self):
-            self.var_count = 0
+        def __init__(self, start_token):
             self.visited = {}
+            self.token_num = start_token
 
         def visit_Name(self, node: ast.Name):  # Needs to be capital 'N'
             # TODO: actually use utf8 tokens or something instead of v1, v2
             if node.id not in self.visited:
-                var_name = 'v' + str(self.var_count)
+                var_name = chr(self.token_num)
                 self.visited[node.id] = var_name
-                self.var_count += 1
+                self.token_num += 1
             else:
                 var_name = self.visited[node.id]
             return ast.copy_location(ast.Name(id=var_name), node)
 
-    @staticmethod
-    def tokenize(program_as_string):
+    def tokenize(self, program_as_string):
         tree = ast.parse(program_as_string)
 
-        transformer = NameTokenizer.Transformer()
+        transformer = NameTokenizer.Transformer(self.start_token)
         transformer.visit(tree)
 
         return astunparse.unparse(tree)
 
 
 class SyntaxTokenizer:
-    @staticmethod
-    def tokenize(program_as_string):
+    def __init__(self, word_to_token):
+        self.word_to_token = word_to_token
+
+    def tokenize(self, program_as_string):
         str_index = 0
         result = ''
         g = tokenize.tokenize(BytesIO(program_as_string.encode('utf-8')).readline)
@@ -87,12 +91,12 @@ class SyntaxTokenizer:
 
             # TODO: remove the indenting token
             if toknum == tokenize.DEDENT:
-                result += word_to_token['dedent']
+                result += self.word_to_token['dedent']
             elif toknum == tokenize.INDENT:
-                result += word_to_token['indent']
+                result += self.word_to_token['indent']
             else:
                 try:
-                    result += word_to_token[tokval]
+                    result += self.word_to_token[tokval]
                 except KeyError:
                     result += tokval
                 finally:
@@ -102,14 +106,12 @@ class SyntaxTokenizer:
 
 
 def tokenize_file(program_as_string):
-    variables_done = NameTokenizer.tokenize(program_as_string)
-    print(variables_done)
-    syntax_done = SyntaxTokenizer.tokenize(variables_done)
-    print(syntax_done)
-    return syntax_done
+    variables_tokenized = NameTokenizer(utf8char).tokenize(program_as_string)
+    syntax_tokenized = SyntaxTokenizer(word_to_token).tokenize(variables_tokenized)
+    return syntax_tokenized
 
 
-def untokenize_string(string):
+def untokenize_string(string, token_to_name):
     def remove_all(array, item):
         while item in array:
             array.remove(item)
@@ -154,6 +156,9 @@ def untokenize_string(string):
 
     for t in token_to_word:
         formatted = formatted.replace(t, token_to_word[t])
+
+    for t in token_to_name:
+        formatted = formatted.replace(t, token_to_name[t])
 
     return formatted
 

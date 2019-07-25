@@ -6,11 +6,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tensorflow as tf
 import numpy as np
 import os
-import time
 import iteratortools as it
-from programtokenizer import *
-import sys
-import tokenize
+import programtokenizer
 import model_maker
 import json
 
@@ -39,7 +36,7 @@ def get_as_file(file_paths):
     for file_path in file_paths:
         try:
             with open(os.path.join(it.DATA_PATH, file_path), 'r', encoding='utf8') as f:
-                to_return += tokenize_file(f.read())
+                to_return += programtokenizer.tokenize_file(f.read())
         except Exception as e:
             files_not_found += 1
             it.handle_exception(ERROR_LOG_FILE, file_path, 'Unluggy', e)
@@ -75,7 +72,7 @@ def write_index(index, vocab_size):
 if __name__ == '__main__':
     print('Scanning contents of files into memory')
     file_paths = it.get_file_paths()
-    text = get_as_file(file_paths[:5])
+    text = get_as_file(file_paths)
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))
     print('{} unique tokens'.format(len(vocab)))
