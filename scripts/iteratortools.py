@@ -48,6 +48,14 @@ def get_file_paths(training_only=False):
     return [line.strip() for line in content if os.path.basename(line.strip()) != '__init__.py']
 
 
+def get_eval_file_paths():
+    content = []
+    with open(EVALUATION_SET_FILE_PATH, encoding='utf8') as f:
+        content += f.readlines()
+    return [line.strip() for line in content if os.path.basename(line.strip()) != '__init__.py']
+
+
+
 def get_cfg_file_paths():
     content = get_file_paths()
     return ['data_cfg' + line.strip()[4:] + '.dot' for line in content if os.path.basename(line.strip()) != '__init__.py']
