@@ -49,6 +49,21 @@ def remove_last_lines(file_path, num_lines):
     return content
 
 
+def write_output_file(output_file_path, modified_text):
+    # Ensure dirs exist
+    if not os.path.exists(os.path.dirname(output_file_path)):
+        try:
+            os.makedirs(os.path.dirname(output_file_path))
+        except OSError as exc:
+            if exc.errno != errno.EEXIST:
+                raise
+
+    # write to file
+    with open(output_file_path, 'w') as output_file:
+        output_file.writelines(modified_text)
+
+
+
 def get_style_fails(model_output):
     # TODO Return a list of the style fails
     # Reference: text = subprocess.run(['ls', '-l'], capture_output=True)
@@ -103,21 +118,9 @@ if __name__ == '__main__':
     file_paths = [file_path for file_path in it.get_eval_file_paths()]
     for file_path in file_paths:
         modified_text = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
+        write_output_file(os.path.join(OUTPUT_PATH, file_path), modified_text)
 
-        # Ensure dirs exist
-        output_file_path = os.path.join(OUTPUT_PATH, file_path)
-        if not os.path.exists(os.path.dirname(output_file_path)):
-            try:
-                os.makedirs(os.path.dirname(output_file_path))
-            except OSError as exc:
-                if exc.errno != errno.EEXIST:
-                    raise
-
-        with open(output_file_path, 'w') as output_file:
-            output_file.writelines(modified_text)
-
-
-
+    # Build model and evaluate
     with open(os.path.join(checkpoint_dir, train.WORD_TO_INDEX_FILE)) as json_file:
         state = json.load(json_file)
 
@@ -126,4 +129,5 @@ if __name__ == '__main__':
         model.build(tf.TensorShape([1, None]))
 
         # TODO use more than the first file!!!!!
+        # TODO use the modified files
         evaluate(model, num_lines, state, file_paths[0])
