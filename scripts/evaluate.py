@@ -18,6 +18,7 @@ import os
 import argparse
 import json
 import shutil
+import re
 
 
 # CONSTANTS #
@@ -55,54 +56,50 @@ def remove_last_lines(file_path, num_lines):
 def write_output_file(output_file_path, modified_text):
     # Ensure dirs exist
     if not os.path.exists(os.path.dirname(output_file_path)):
-        try:
-            os.makedirs(os.path.dirname(output_file_path))
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                raise
+        os.makedirs(os.path.dirname(output_file_path))
 
     # write to file
     with open(output_file_path, 'w') as output_file:
         output_file.writelines(modified_text)
 
 
-
-def get_style_fails(model_output):
-    # TODO Return a list of the style fails
-    # Reference: text = subprocess.run(['ls', '-l'], capture_output=True)
-    pass
+def get_style_fails(file_path):
+    console_output = subprocess.run(['pylint', file_path], capture_output=True)
+    return re.findall(r'\(.*\)', console_output.stdout.decode('utf-8')) 
 
 
 def get_critical_fails(model_output):
     # TODO Return a list of the critical files
-    # Reference: text = subprocess.run(['ls', '-l'], capture_output=True)
     pass
 
 
 def get_executable(model_output):
     # TODO Return whether the file was executable
-    # Reference: text = subprocess.run(['ls', '-l'], capture_output=True)
     pass
 
 
 def is_same(model_output, orginal):
     # TODO return whether generated line was different or same as orginal
-    # Reference: text = subprocess.run(['ls', '-l'], capture_output=True)
     pass
 
 
 def evaluate(model, num_lines, state, file_paths):
     for file_path in file_paths:
+        # Read contents of file
         gen_start_string = ''
         with open(file_path, 'r') as f:
             gen_start_string = f.read()
 
-        model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
+        # TODO uncomment when model is working
+        # model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
+        model_output = gen_start_string # TODO delete this, when above is uncommented
+        with open(file_path, 'w') as output_file:
+            output_file.writelines(model_output)
 
         # TODO aggregate results
-        get_style_fails(model_output)
-        get_critical_fails(model_output)
-        get_executable(model_output)
+        get_style_fails(file_path)
+        get_critical_fails(file_path)
+        get_executable(file_path)
 
     # TODO print results
 
@@ -139,8 +136,7 @@ if __name__ == '__main__':
         # model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
         # model.build(tf.TensorShape([1, None]))
 
-        # TODO use more than the first file!!!!!
+        # Evaluate the model
         print('Evaluating...')
         evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
-        print(evaluation_files)
-        evaluate(model, num_lines, state, evaluation_files[0])
+        evaluate(model, num_lines, state, evaluation_files)
