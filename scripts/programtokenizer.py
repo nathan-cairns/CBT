@@ -53,12 +53,21 @@ class NameTokenizer:
             return ast.copy_location(ast.Name(id=var_name), node)
 
     def tokenize(self, program_as_string):
-        tree = ast.parse(program_as_string)
+        was_altered = False
+        try:
+            tree = ast.parse(program_as_string)
+        except SyntaxError:
+            was_altered = True
+            tree = ast.parse(program_as_string.strip() + ' print(a)')
 
         transformer = NameTokenizer.Transformer(self.start_token)
         transformer.visit(tree)
 
-        return astunparse.unparse(tree), transformer.name_map
+        if was_altered:
+            unparsed = astunparse.unparse(tree)[:-5]  # All but the last 'p(a)' symbols
+        else:
+            unparsed = astunparse.unparse(tree)
+        return unparsed, transformer.name_map
 
 
 class SyntaxTokenizer:
@@ -109,7 +118,7 @@ class SyntaxTokenizer:
                 finally:
                     str_index += word_len
 
-        return result
+        return result[:-1]  # all but last char which will always be a dedent
 
 
 def tokenize_file(program_as_string):
