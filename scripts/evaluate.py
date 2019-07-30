@@ -16,6 +16,9 @@ import model_maker
 import subprocess
 import os
 import argparse
+import json
+import shutil
+
 
 # CONSTANTS #
 
@@ -114,20 +117,30 @@ if __name__ == '__main__':
     num_lines = args.lines + 1 # TODO remove + 1
     checkpoint_dir = args.checkpoint_dir
 
+    # Empty eval files dir
+    print('Emptying eval directory...')
+    shutil.rmtree(OUTPUT_PATH, ignore_errors=True)
+
     # Remove last n lines from file and write to new file.
+    print('Preparing evaluation set...')
     file_paths = [file_path for file_path in it.get_eval_file_paths()]
     for file_path in file_paths:
         modified_text = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
         write_output_file(os.path.join(OUTPUT_PATH, file_path), modified_text)
 
     # Build model and evaluate
+    print('Building model...')
     with open(os.path.join(checkpoint_dir, train.WORD_TO_INDEX_FILE)) as json_file:
         state = json.load(json_file)
 
-        model = model_maker.build_model(int(state['vocab_size']), model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
-        model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
-        model.build(tf.TensorShape([1, None]))
+        # TODO whats the deal with vocab size???? uncomment when this is fixed
+        model = []
+        # model = model_maker.build_model(int(state['vocab_size']), model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
+        # model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+        # model.build(tf.TensorShape([1, None]))
 
         # TODO use more than the first file!!!!!
-        # TODO use the modified files
-        evaluate(model, num_lines, state, file_paths[0])
+        print('Evaluating...')
+        evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
+        print(evaluation_files)
+        evaluate(model, num_lines, state, evaluation_files[0])
