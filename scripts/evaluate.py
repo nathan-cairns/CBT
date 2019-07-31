@@ -19,6 +19,7 @@ import argparse
 import json
 import shutil
 import re
+import tensorflow as tf
 
 
 # CONSTANTS #
@@ -90,9 +91,7 @@ def evaluate(model, num_lines, state, file_paths):
         with open(file_path, 'r') as f:
             gen_start_string = f.read()
 
-        # TODO uncomment when model is working
-        # model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
-        model_output = gen_start_string # TODO delete this, when above is uncommented
+        model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
         with open(file_path, 'w') as output_file:
             output_file.writelines(model_output)
 
@@ -130,11 +129,9 @@ if __name__ == '__main__':
     with open(os.path.join(checkpoint_dir, train.WORD_TO_INDEX_FILE)) as json_file:
         state = json.load(json_file)
 
-        # TODO whats the deal with vocab size???? uncomment when this is fixed
-        model = []
-        # model = model_maker.build_model(int(state['vocab_size']), model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
-        # model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
-        # model.build(tf.TensorShape([1, None]))
+        model = model_maker.build_model(int(state['vocab_size']), model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
+        model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+        model.build(tf.TensorShape([1, None]))
 
         # Evaluate the model
         print('Evaluating...')
