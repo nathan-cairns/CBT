@@ -43,17 +43,19 @@ parser.add_argument('--lines', help='The number of lines to remove and then gene
 
 
 def remove_last_lines(file_path, num_lines):
+    """Removes the last n lines which contain code"""
     content = []
     with open(file_path, encoding='ISO-8859-1') as f:
         content += f.readlines()
     
-    # TODO handle removing too many lines more gracefully
-    # TODO remove more than just the last line
-    # TODO only remove lines with code in them
-    try:
-        del content[-num_lines]
-    except:
-        print('{} not processed as removing more lines than in file'.format(file_path))
+    removed_counter = 0
+    for i, line in reversed(list(enumerate(content))):
+        if not line.isspace():
+            removed_counter = removed_counter + 1
+        del content[i]
+
+        if removed_counter == num_lines:
+            break
 
     return content
 
@@ -169,7 +171,10 @@ if __name__ == '__main__':
     file_paths = [file_path for file_path in it.get_eval_file_paths()]
     for file_path in file_paths:
         modified_text = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
-        write_output_file(os.path.join(OUTPUT_PATH, file_path), modified_text)
+        if not modified_text:
+            print('Error: In {} couldn\'t remove {} lines from the file as it was not long enough. Not considering for evaluation.'.format(file_path, num_lines) )
+        else:
+            write_output_file(os.path.join(OUTPUT_PATH, file_path), modified_text)
 
     # Build model and evaluate
     print('Building model...')
