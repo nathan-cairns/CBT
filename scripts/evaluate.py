@@ -46,6 +46,7 @@ def remove_last_lines(file_path, num_lines):
         content += f.readlines()
     
     # TODO handle removing too many lines more gracefully
+    # TODO remove more than just the last line
     try:
         del content[-num_lines]
     except:
@@ -65,8 +66,8 @@ def write_output_file(output_file_path, modified_text):
 
 
 def get_style_fails(file_path):
-    console_output = subprocess.run(['pylint', file_path], capture_output=True)
-    return re.findall(r'\(.*\)', console_output.stdout.decode('utf-8')) 
+    console_output = subprocess.run(['pycodestyle', file_path, '--format', '1\'%(code)s\''], capture_output=True)
+    return re.findall(r'[EW]\d{1,3}', console_output.stdout.decode('utf-8'))
 
 
 def get_critical_fails(model_output):
@@ -110,7 +111,7 @@ if __name__ == '__main__':
     # Parse Arguments
     args = parser.parse_args()
     # TODO NEED TO COME UP WITH A BETTER WAY TO DELETE LINES CURRENTLY THIS IS SET TO +1 TO COVER DELETING EMPTY LINES AND THEN A LINE OF CODE HOWEVER THIS IS BAD AS SOMETIMES DELETES TWO LINES OF CODE
-    num_lines = args.lines + 1 # TODO remove + 1
+    num_lines = args.lines
     checkpoint_dir = args.checkpoint_dir
 
     # Empty eval files dir
