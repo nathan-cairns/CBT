@@ -7,6 +7,9 @@ import train
 import os
 
 
+tf.enable_eager_execution()
+
+
 # CONSTANTS #
 
 

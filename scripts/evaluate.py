@@ -73,9 +73,10 @@ def run_linter(file_path):
     # R refactoring related checks
     # W various warnings
     # E errors, for probable bugs in the code
-    # F fatal, if an error occurred which prevented pylint from doing further processing.
-    console_output = subprocess.run(['pylint', file_path, '--msg-template=\'{msg_id}\''], capture_output=True)
-    return re.findall(r'[CRWEF]\d{4}', console_output.stdout.decode('utf-8'))
+    # F fatal, if an error occurred which prevented pylint from doing further processing.z
+    pipeline = subprocess.Popen(['pylint', file_path, '--msg-template=\'{msg_id}\''], stdout=subprocess.PIPE)
+    console_output = pipeline.communicate()
+    return re.findall(r'[CRWEF]\d{4}', str(console_output))
 
 
 def is_same(model_output, orginal):
