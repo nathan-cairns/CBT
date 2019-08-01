@@ -28,6 +28,7 @@ import collections
 
 
 OUTPUT_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'eval_output')
+PROCESSING_CHUNK_SIZE = 50
 
 
 # ARGPARSE #
@@ -67,14 +68,14 @@ def write_output_file(output_file_path, modified_text):
         output_file.writelines(modified_text)
 
 
-def run_linter(file_path):
+def run_linter(chunk):
     # From: https://pylint.readthedocs.io/en/latest/user_guide/message-control.html
     # C convention related checks
     # R refactoring related checks
     # W various warnings
     # E errors, for probable bugs in the code
-    # F fatal, if an error occurred which prevented pylint from doing further processing.z
-    pipeline = subprocess.Popen(['pylint', file_path, '--msg-template=\'{msg_id}\''], stdout=subprocess.PIPE)
+    # F fatal, if an error occurred which prevented pylint from doing further processing.
+    pipeline = subprocess.Popen(['pylint', '--msg-template=\'{msg_id}\''] + chunk, stdout=subprocess.PIPE)
     console_output = pipeline.communicate()
     return re.findall(r'[CRWEF]\d{4}', str(console_output))
 
@@ -84,14 +85,8 @@ def is_same(model_output, orginal):
     pass
 
 
-def evaluate(model, num_lines, state, file_paths):
-    # For C and R prefixes
-    style_fails = {}
-    # For W and E prefixes
-    warnings = {}
-    # For F prefixes
-    fatal_errors = {}
-
+def generate_model_output(file_paths):
+    # Use model to generate evaulation set
     for file_path in file_paths:
         # Read contents of file
         gen_start_string = ''
@@ -102,7 +97,22 @@ def evaluate(model, num_lines, state, file_paths):
         with open(file_path, 'w') as output_file:
             output_file.writelines(model_output)
 
-        linting_results = run_linter(file_path)
+
+def evaluate(model, num_lines, state, file_paths):
+    # For C and R prefixes
+    style_fails = {}
+    # For W and E prefixes
+    warnings = {}
+    # For F prefixes
+    fatal_errors = {}
+
+    # Batch and lint to evaluate
+    in_chunks = chunks(file_paths, PROCESSING_CHUNK_SIZE)
+    progress_bar = it.ProgressBar(0, file_paths.__len__(), prefix='Progress:', suffix='Complete')
+    progress_bar.print_progress_bar()
+    for chunk in in_chunks:
+        linting_results = run_linter(chunk)
+        print(linting_results)
         for linting_result in linting_results:
             prefix = linting_result[0]
             if prefix == 'C' or prefix == 'R':
@@ -119,6 +129,11 @@ def evaluate(model, num_lines, state, file_paths):
         'warnings': warnings,
         'fatal_errors': fatal_errors
     }
+
+
+def chunks(l, n):
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 
 
 def print_stats(stats):
@@ -165,10 +180,13 @@ if __name__ == '__main__':
         model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
         model.build(tf.TensorShape([1, None]))
 
+        # Generate model answers
+        print('Generating model output')
+        evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
+        generate_model_output(evaluation_files)
+
         # Evaluate the model
         print('Evaluating...')
-        evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
-
         stats = {
             'total_number_of_files': len(evaluation_files)
         }
