@@ -10,7 +10,7 @@ setup(name='cbt',
             'comment-filter',
             'tensorflow==2.0.0-beta1',
             'astunparse',
-            'pycodestyle'
+            'pylint '
       ],
       dependency_links=[
             'https://github.com/codeauroraforum/comment-filter/tarball/master#egg=comment-filter-v1.0.0'

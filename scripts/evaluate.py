@@ -39,7 +39,6 @@ parser.add_argument('--lines', help='The number of lines to remove and then gene
 # FUNCTIONS #
 
 
-# TODO NEED TO COME UP WITH A BETTER WAY TO DELETE LINES CURRENTLY THIS IS SET TO +1 TO COVER DELETING EMPTY LINES AND THEN A LINE OF CODE HOWEVER THIS IS BAD AS SOMETIMES DELETES TWO LINES OF CODE
 def remove_last_lines(file_path, num_lines):
     content = []
     with open(file_path, encoding='ISO-8859-1') as f:
@@ -47,6 +46,7 @@ def remove_last_lines(file_path, num_lines):
     
     # TODO handle removing too many lines more gracefully
     # TODO remove more than just the last line
+    # TODO only remove lines with code in them
     try:
         del content[-num_lines]
     except:
@@ -65,19 +65,15 @@ def write_output_file(output_file_path, modified_text):
         output_file.writelines(modified_text)
 
 
-def get_style_fails(file_path):
-    console_output = subprocess.run(['pycodestyle', file_path, '--format', '1\'%(code)s\''], capture_output=True)
-    return re.findall(r'[EW]\d{1,3}', console_output.stdout.decode('utf-8'))
-
-
-def get_critical_fails(model_output):
-    # TODO Return a list of the critical files
-    pass
-
-
-def get_executable(model_output):
-    # TODO Return whether the file was executable
-    pass
+def run_linter(file_path):
+    # From: https://pylint.readthedocs.io/en/latest/user_guide/message-control.html
+    # C convention related checks
+    # R refactoring related checks
+    # W various warnings
+    # E errors, for probable bugs in the code
+    # F fatal, if an error occurred which prevented pylint from doing further processing.
+    console_output = subprocess.run(['pylint', file_path, '--msg-template=\'{msg_id}\''], capture_output=True)
+    return re.findall(r'[CRWEF]\d{4}', console_output.stdout.decode('utf-8'))
 
 
 def is_same(model_output, orginal):
@@ -86,22 +82,57 @@ def is_same(model_output, orginal):
 
 
 def evaluate(model, num_lines, state, file_paths):
+    # For C and R prefixes
+    style_fails = {}
+    # For W and E prefixes
+    warnings = {}
+    # For F prefixes
+    fatal_errors = {}
+
     for file_path in file_paths:
         # Read contents of file
         gen_start_string = ''
         with open(file_path, 'r') as f:
             gen_start_string = f.read()
 
+        model_output = gen_start_string
         model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
         with open(file_path, 'w') as output_file:
             output_file.writelines(model_output)
 
-        # TODO aggregate results
-        get_style_fails(file_path)
-        get_critical_fails(file_path)
-        get_executable(file_path)
+        linting_results = run_linter(file_path)
 
-    # TODO print results
+        for linting_result in linting_results:
+            prefix = linting_result[0]
+
+            if prefix == 'C' or prefix == 'R':
+                style_fails[linting_result] = 1 if linting_result not in style_fails else style_fails[linting_result] + 1 
+            elif prefix == 'W' or prefix == 'E':
+                warnings[linting_result] = 1 if linting_result not in warnings else warnings[linting_result] + 1
+            elif prefix == 'F':
+                fatal_errors[linting_result] = 1 if linting_result not in fatal_errors else fatal_errors[linting_result] + 1
+            else:
+                print('invalid prefix: {}'.format(prefix))
+
+    return {
+        'style_fails': style_fails,
+        'warnings': warnings,
+        'fatal_errors': fatal_errors
+    }
+
+
+def print_stats(stats):
+    for stat, stat_values in stats.items():
+
+        print('\n==============================')
+        if isinstance(stat_values, dict):
+            print('{}:'.format(stat))
+            print('==============================')
+            for stat_value_key, stat_value in stat_values.items():
+                print('{}: {}'.format(stat_value_key, stat_value))
+        else:
+            print('{}: {}'.format(stat, stat_values))
+            print('==============================')
 
 
 # MAIN #
@@ -110,7 +141,6 @@ def evaluate(model, num_lines, state, file_paths):
 if __name__ == '__main__':
     # Parse Arguments
     args = parser.parse_args()
-    # TODO NEED TO COME UP WITH A BETTER WAY TO DELETE LINES CURRENTLY THIS IS SET TO +1 TO COVER DELETING EMPTY LINES AND THEN A LINE OF CODE HOWEVER THIS IS BAD AS SOMETIMES DELETES TWO LINES OF CODE
     num_lines = args.lines
     checkpoint_dir = args.checkpoint_dir
 
@@ -137,4 +167,11 @@ if __name__ == '__main__':
         # Evaluate the model
         print('Evaluating...')
         evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
-        evaluate(model, num_lines, state, evaluation_files)
+
+        stats = {
+            'total_number_of_files': len(evaluation_files)
+        }
+        stats.update(evaluate(model, num_lines, state, evaluation_files))
+
+        print('Evaluation complete.')
+        print_stats(stats)
