@@ -20,6 +20,8 @@ import json
 import shutil
 import re
 import tensorflow as tf
+import operator
+import collections
 
 
 # CONSTANTS #
@@ -95,16 +97,13 @@ def evaluate(model, num_lines, state, file_paths):
         with open(file_path, 'r') as f:
             gen_start_string = f.read()
 
-        model_output = gen_start_string
         model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
         with open(file_path, 'w') as output_file:
             output_file.writelines(model_output)
 
         linting_results = run_linter(file_path)
-
         for linting_result in linting_results:
             prefix = linting_result[0]
-
             if prefix == 'C' or prefix == 'R':
                 style_fails[linting_result] = 1 if linting_result not in style_fails else style_fails[linting_result] + 1 
             elif prefix == 'W' or prefix == 'E':
@@ -123,12 +122,13 @@ def evaluate(model, num_lines, state, file_paths):
 
 def print_stats(stats):
     for stat, stat_values in stats.items():
-
         print('\n==============================')
         if isinstance(stat_values, dict):
             print('{}:'.format(stat))
             print('==============================')
-            for stat_value_key, stat_value in stat_values.items():
+            sorted_tuple = sorted(stat_values.items(), key=operator.itemgetter(1))
+            sorted_dict = collections.OrderedDict(sorted_tuple)
+            for stat_value_key, stat_value in sorted_dict.items():
                 print('{}: {}'.format(stat_value_key, stat_value))
         else:
             print('{}: {}'.format(stat, stat_values))
