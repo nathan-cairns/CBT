@@ -28,6 +28,7 @@ import collections
 
 
 OUTPUT_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'eval_output')
+STAT_FILE_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'stats.json')
 PROCESSING_CHUNK_SIZE = 50
 
 
@@ -114,7 +115,6 @@ def evaluate(model, num_lines, state, file_paths):
     progress_bar.print_progress_bar()
     for chunk in in_chunks:
         linting_results = run_linter(chunk)
-        print(linting_results)
         for linting_result in linting_results:
             prefix = linting_result[0]
             if prefix == 'C' or prefix == 'R':
@@ -153,6 +153,11 @@ def print_stats(stats):
             print('==============================')
 
 
+def write_stats_to_file(stats, file_path_output):
+    with open(file_path_output, 'w') as fp:
+        json.dump(stats, fp)
+
+
 # MAIN #
 
 
@@ -162,7 +167,6 @@ if __name__ == '__main__':
     num_lines = args.lines
     checkpoint_dir = args.checkpoint_dir
 
-    # Empty eval files dir
     print('Emptying eval directory...')
     shutil.rmtree(OUTPUT_PATH, ignore_errors=True)
 
@@ -176,26 +180,28 @@ if __name__ == '__main__':
         else:
             write_output_file(os.path.join(OUTPUT_PATH, file_path), modified_text)
 
-    # Build model and evaluate
-    print('Building model...')
     with open(os.path.join(checkpoint_dir, train.WORD_TO_INDEX_FILE)) as json_file:
+        print('Building model...')
         state = json.load(json_file)
-
         model = model_maker.build_model(int(state['vocab_size']), model_maker.EMBEDDING_DIMENSION, model_maker.RNN_UNITS, batch_size=1)
         model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
         model.build(tf.TensorShape([1, None]))
 
-        # Generate model answers
-        print('Generating model output')
+        print('Generating model output...')
         evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
         generate_model_output(evaluation_files)
 
-        # Evaluate the model
         print('Evaluating...')
         stats = {
-            'total_number_of_files': len(evaluation_files)
+            'total_number_of_files': len(evaluation_files),
+            'num_lines_removed': num_lines
         }
         stats.update(evaluate(model, num_lines, state, evaluation_files))
 
-        print('Evaluation complete.')
+        print('Printing stats...')
         print_stats(stats)
+
+        print('Writing stats to file...')
+        write_stats_to_file(stats, STAT_FILE_PATH)
+
+        print('Evaluation complete.')
