@@ -3,6 +3,7 @@ import re
 from io import BytesIO
 import ast
 import astunparse
+import clang.cindex as cindex
 
 
 TOKEN_RANGE_START = 1286
@@ -27,6 +28,9 @@ for word in words:
 var_char_index = utf8char
 
 token_to_word = {v: k for k, v in word_to_token.items()}
+
+
+cindex.Config.set_library_path('C:\\Program Files\\LLVM\\bin\\libclang.dll')
 
 
 def get_var_char_index():
@@ -195,3 +199,24 @@ def untokenize_string(string, token_to_name):
 
 def split_tokenized_files(string):
     return string.split(word_to_token['eof'])
+
+
+def tokenize_c(text):
+    def comment_remover(text):
+        def replacer(match):
+            s = match.group(0)
+            if s.startswith('/'):
+                return ""
+            else:
+                return s
+
+        pattern = re.compile(
+            r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+            re.DOTALL | re.MULTILINE
+        )
+        return re.sub(pattern, replacer, text)
+    text = comment_remover(text)
+    index = cindex.Index.create()
+    tu = index.parse("C:\\Users\\Buster\\Documents\\Code\\CBT\\new.c")
+    tokens = tu.get_tokens()
+    print(tokens)
