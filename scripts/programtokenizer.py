@@ -5,6 +5,7 @@ import ast
 import astunparse
 import clang.cindex
 import clang.enumerations
+import tempfile
 
 
 TOKEN_RANGE_START = 1286
@@ -201,6 +202,27 @@ def split_tokenized_files(string):
 
 
 
+c_keywords = ['auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extern',
+              'float', 'for', 'goto', 'if', 'int', 'long', 'register', 'return', 'short', 'signed', 'sizeof', 'static',
+              'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while', 'strcpy', 'strncpy',
+              'strcmp', 'strncmp', 'strlen', 'strcat', 'strncat', 'strchr', 'strrcht', 'strstr', 'strtok', 'calloc',
+              'free', 'malloc', 'realloc', 'memcpy', 'memcmp', 'memchr', 'memset', 'memmove', 'tolower', 'toupper',
+              'perror', 'strerror', 'printf', 'gets', 'scanf', '==', '!=', '--', '++', '()', '[]', '&&', '||', '-=',
+              '+=', '*=', '/=', '%=', '&=', '|=', '^=', '<=', '>=', '<=>' '->', '<<', '>>', ]
+
+word_to_token_c = {}
+utf8char = TOKEN_RANGE_START
+for word in c_keywords:
+    word_to_token_c[word] = chr(utf8char)
+    utf8char += 1
+var_char_index_c = utf8char
+
+token_to_word_c = {v: k for k, v in word_to_token_c.items()}
+
+punctuation_mirror = { '=': '=', '-': '-', '+': '+', '(': ')', '[': ']', '&': '&', '|': '|' }
+
+# TODO: tokenize #include <...>
+
 
 def tokenize_c(text):
     def comment_remover(text):
@@ -217,22 +239,43 @@ def tokenize_c(text):
         )
         return re.sub(pattern, replacer, text)
 
-
-    text = comment_remover(text)
     index = clang.cindex.Index.create()
-    tu = index.parse("C:\\Users\\Buster\\Documents\\Code\\CBT\\new.c")
-    print(tu.spelling)
+    text = comment_remover(text)
+    f = tempfile.TemporaryFile(mode='r+', suffix='.c')
+    f.write(text)
+    f.read()
+    tu = index.parse(f.name)
+    f.close()
+
     tokens = tu.cursor.get_tokens()
     processed_tokens = []
+    last_token = None
     for token in tokens:
-        # print("extent: {}, {}".format(token.extent, dir(token.extent)))
-        # print("int_data: {}, {}".format(token.int_data, dir(token.int_data)))
-        # print("kind: {}, {}".format(token.kind, dir(token.kind)))
-        # print("location: {}, {}".format(token.location, dir(token.location)))
-        # print("ptr_data: {}, {}".format(token.ptr_data, dir(token.ptr_data)))
-        # print("spelling: {}, {}".format(token.spelling, dir(token.spelling)))
-        # print("=======================================================================================================")
-        processed_tokens.append(token.spelling)
         print("{} {}".format(token.spelling, token.kind))
+        if token.kind.name == 'LITERAL' or \
+                token.kind.name == 'KEYWORD' or \
+                token.kind.name == 'IDENTIFIER':
+            try:
+                processed_tokens.append(word_to_token_c[token.spelling])
+            except KeyError:
+                processed_tokens.append(" " + token.spelling)
+        elif token.kind.name == 'PUNCTUATION':
+            try:
+                try:
+                    processed_tokens.append(word_to_token_c[token.spelling])
+                except KeyError:
+                    # 2 of same punctuation next to each other we can collapse as it mans its own unique thing
+                    if last_token and punctuation_mirror[last_token.spelling] == token.spelling:
+                        double_punc_as_token = word_to_token_c[last_token.spelling + token.spelling]
+                        processed_tokens = processed_tokens[:-1]
+                        processed_tokens.append(double_punc_as_token)
+                    else:
+                        processed_tokens.append(token.spelling)
+            except KeyError:
+                processed_tokens.append(token.spelling)
+        else:
+            # TODO: the variable names info on this is in token?
+            # TODO: remove round braces from fors and ifs and stuff
+            processed_tokens.append(token.spelling)
+        last_token = token
     print("".join(processed_tokens))
-

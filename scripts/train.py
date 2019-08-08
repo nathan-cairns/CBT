@@ -96,7 +96,7 @@ if __name__ == '__main__':
         if len(programs) is 0:
             print('No files found with {} as a language'.format(lang))
             sys.exit(1)
-        text = tokenize_lang([programs[0]], lang)
+        text = tokenize_lang(programs[:5], lang)
         sys.exit(1)  # TODO: REMOVE
 
     print('Length of text: {} characters'.format(len(text)))
