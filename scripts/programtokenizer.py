@@ -3,7 +3,8 @@ import re
 from io import BytesIO
 import ast
 import astunparse
-import clang.cindex as cindex
+import clang.cindex
+import clang.enumerations
 
 
 TOKEN_RANGE_START = 1286
@@ -27,10 +28,8 @@ for word in words:
     utf8char += 1
 var_char_index = utf8char
 
+
 token_to_word = {v: k for k, v in word_to_token.items()}
-
-
-cindex.Config.set_library_path('C:\\Program Files\\LLVM\\bin\\libclang.dll')
 
 
 def get_var_char_index():
@@ -201,6 +200,8 @@ def split_tokenized_files(string):
     return string.split(word_to_token['eof'])
 
 
+
+
 def tokenize_c(text):
     def comment_remover(text):
         def replacer(match):
@@ -215,8 +216,23 @@ def tokenize_c(text):
             re.DOTALL | re.MULTILINE
         )
         return re.sub(pattern, replacer, text)
+
+
     text = comment_remover(text)
-    index = cindex.Index.create()
+    index = clang.cindex.Index.create()
     tu = index.parse("C:\\Users\\Buster\\Documents\\Code\\CBT\\new.c")
-    tokens = tu.get_tokens()
-    print(tokens)
+    print(tu.spelling)
+    tokens = tu.cursor.get_tokens()
+    processed_tokens = []
+    for token in tokens:
+        # print("extent: {}, {}".format(token.extent, dir(token.extent)))
+        # print("int_data: {}, {}".format(token.int_data, dir(token.int_data)))
+        # print("kind: {}, {}".format(token.kind, dir(token.kind)))
+        # print("location: {}, {}".format(token.location, dir(token.location)))
+        # print("ptr_data: {}, {}".format(token.ptr_data, dir(token.ptr_data)))
+        # print("spelling: {}, {}".format(token.spelling, dir(token.spelling)))
+        # print("=======================================================================================================")
+        processed_tokens.append(token.spelling)
+        print("{} {}".format(token.spelling, token.kind))
+    print("".join(processed_tokens))
+
