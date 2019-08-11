@@ -6,6 +6,7 @@ import astunparse
 import clang.cindex
 import clang.enumerations
 import tempfile
+import subprocess
 
 
 TOKEN_RANGE_START = 1286
@@ -207,40 +208,46 @@ c_keywords = ['auto', 'break', 'case', 'char', 'const', 'continue', 'default', '
               'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while', 'strcpy', 'strncpy',
               'strcmp', 'strncmp', 'strlen', 'strcat', 'strncat', 'strchr', 'strrcht', 'strstr', 'strtok', 'calloc',
               'free', 'malloc', 'realloc', 'memcpy', 'memcmp', 'memchr', 'memset', 'memmove', 'tolower', 'toupper',
-              'perror', 'strerror', 'printf', 'gets', 'scanf', '==', '!=', '--', '++', '()', '[]', '&&', '||', '-=',
+              'perror', 'strerror', 'printf', 'gets', 'scanf', '==', '!=', '--', '++', '&&', '||', '-=',
               '+=', '*=', '/=', '%=', '&=', '|=', '^=', '<=', '>=', '<=>' '->', '<<', '>>', ]
 
 word_to_token_c = {}
-utf8char = TOKEN_RANGE_START
+utf8char_c = TOKEN_RANGE_START
 for word in c_keywords:
-    word_to_token_c[word] = chr(utf8char)
-    utf8char += 1
-var_char_index_c = utf8char
+    word_to_token_c[word] = chr(utf8char_c)
+    utf8char_c += 1
+var_char_index_c = utf8char_c
 
 token_to_word_c = {v: k for k, v in word_to_token_c.items()}
 
-punctuation_mirror = { '=': '=', '-': '-', '+': '+', '(': ')', '[': ']', '&': '&', '|': '|' }
+punctuation_mirror = { '=': '=', '-': '-', '+': '+', '&': '&', '|': '|' }
 
 # TODO: tokenize #include <...>
 
 
-def tokenize_c(text):
-    def comment_remover(text):
-        def replacer(match):
+def tokenize_c(text, var_char_index=var_char_index_c):
+    def strip_preprocessing(text):
+        def comment_replacer(match):
             s = match.group(0)
             if s.startswith('/'):
                 return ""
             else:
                 return s
 
+        def header_replacer(match):
+            s = match.group(0)
+            return ""
+
         pattern = re.compile(
             r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
             re.DOTALL | re.MULTILINE
         )
-        return re.sub(pattern, replacer, text)
+        no_comments = re.sub(pattern, comment_replacer, text)
+        pattern = re.compile(r'#include<([\s|\S]*?)>')
+        return re.sub(pattern, header_replacer, no_comments)
 
     index = clang.cindex.Index.create()
-    text = comment_remover(text)
+    text = strip_preprocessing(text)
     f = tempfile.TemporaryFile(mode='r+', suffix='.c')
     f.write(text)
     f.read()
@@ -249,16 +256,23 @@ def tokenize_c(text):
 
     tokens = tu.cursor.get_tokens()
     processed_tokens = []
+    variable_names = {}
     last_token = None
     for token in tokens:
         print("{} {}".format(token.spelling, token.kind))
         if token.kind.name == 'LITERAL' or \
-                token.kind.name == 'KEYWORD' or \
-                token.kind.name == 'IDENTIFIER':
+                token.kind.name == 'KEYWORD':
             try:
                 processed_tokens.append(word_to_token_c[token.spelling])
             except KeyError:
                 processed_tokens.append(" " + token.spelling)
+        elif token.kind.name == 'IDENTIFIER':
+            try:
+                processed_tokens.append(variable_names[token.spelling])
+            except KeyError:
+                var_char_index += 1
+                processed_tokens.append(chr(var_char_index))
+                variable_names[token.spelling] = chr(var_char_index)
         elif token.kind.name == 'PUNCTUATION':
             try:
                 try:
@@ -278,4 +292,22 @@ def tokenize_c(text):
             # TODO: remove round braces from fors and ifs and stuff
             processed_tokens.append(token.spelling)
         last_token = token
-    print("".join(processed_tokens))
+
+    output = "".join(processed_tokens)
+    return output
+
+
+def untokenize_c(text, token_to_name):
+    out = text
+    for variable in token_to_name:
+        out = out.replace(token_to_name[variable], (" " + variable + " "))
+    for token in token_to_word_c:
+        out = out.replace(token, (" " + token_to_word_c[token]) + " ")
+
+    f = tempfile.TemporaryFile(mode='r+', suffix='.c')
+    f.write(out)
+    subprocess.call(['./lib/C-Code-Beautifier', f.name, f.name])
+    to_return = f.read()
+    f.close()
+
+    return to_return
