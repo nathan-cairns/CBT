@@ -259,7 +259,6 @@ def tokenize_c(text, var_char_index=var_char_index_c):
     variable_names = {}
     last_token = None
     for token in tokens:
-        print("{} {}".format(token.spelling, token.kind))
         if token.kind.name == 'LITERAL' or \
                 token.kind.name == 'KEYWORD':
             try:
@@ -288,8 +287,6 @@ def tokenize_c(text, var_char_index=var_char_index_c):
             except KeyError:
                 processed_tokens.append(token.spelling)
         else:
-            # TODO: the variable names info on this is in token?
-            # TODO: remove round braces from fors and ifs and stuff
             processed_tokens.append(token.spelling)
         last_token = token
 

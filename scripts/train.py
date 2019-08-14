@@ -71,6 +71,7 @@ def tokenize_c(programs):
     tokenized = []
     for program in programs:
         tokenized.append(programtokenizer.tokenize_c(program))
+    return "".join(tokenized)
 
 
 def tokenize_lang(programs, lang):
@@ -89,7 +90,7 @@ if __name__ == '__main__':
     print('Scanning contents of files into memory')
     lang = sys.argv[1]
     if lang.lower() in 'python':
-        file_paths = it.get_file_paths()
+        file_paths = it.get_file_paths()[:10]
         text = get_as_file(file_paths)
     else:
         programs = it.get_lang_files(lang)
@@ -97,7 +98,6 @@ if __name__ == '__main__':
             print('No files found with {} as a language'.format(lang))
             sys.exit(1)
         text = tokenize_lang(programs[:5], lang)
-        sys.exit(1)  # TODO: REMOVE
 
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))
@@ -106,7 +106,6 @@ if __name__ == '__main__':
     token_to_index = {t: i for i, t in enumerate(vocab)}
     index_to_token = np.array(vocab)
     write_index(token_to_index, len(vocab), programtokenizer.get_var_char_index())
-
     text_as_int = np.array([token_to_index[t] for t in text])
 
     seq_length = 100
