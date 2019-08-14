@@ -13,18 +13,57 @@ import datetime
 from threading import Lock
 from multiprocessing.dummy import Pool as ThreadPool
 import multiprocessing
+import csv
 
 
 # CONSTANTS #
 
 
+# TODO: if we cbf'd change the get file macros and method names to be python specific
+
 REPO_ROOT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 DATA_PATH = os.path.join(REPO_ROOT_PATH, 'data', 'py150_files')
+DATA_PATH_CODE_CHEF = os.path.join(REPO_ROOT_PATH, 'data', 'codechef-competitive-programming')
 
 ERROR_LOG_PATH = os.path.join(REPO_ROOT_PATH, 'log', 'dataprocessing')
 
 TRAINING_SET_FILE_PATH = os.path.join(DATA_PATH, 'python100k_train.txt')
 EVALUATION_SET_FILE_PATH = os.path.join(DATA_PATH, 'python50k_eval.txt')
+
+SOLUTION_PATH_CODE_CHEF = os.path.join(DATA_PATH_CODE_CHEF, 'solutions.csv')
+TRAINING_SET_FILE_PATHS_CODE_CHEF = [
+    os.path.join(DATA_PATH_CODE_CHEF, "program_codes", "first.csv"),
+    os.path.join(DATA_PATH_CODE_CHEF, "program_codes", "second.csv"),
+    os.path.join(DATA_PATH_CODE_CHEF, "program_codes", "third.csv")
+]
+
+
+def get_lang_files(language):
+    ids = []
+    with open(SOLUTION_PATH_CODE_CHEF, 'r') as f:
+        reader = csv.reader(f)
+        no_of_c = 0
+        total = 0
+        for row in reader:
+            total += 1
+            if row[7].lower() == language and row[4] != 'wrong answer':
+                ids.append(row[1])
+                no_of_c += 1
+    soltn_dict = {}
+    for soltn_file in TRAINING_SET_FILE_PATHS_CODE_CHEF:
+        with open(soltn_file, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                soltn_dict[row[0]] = row[1]
+    lang_only = []
+    errors = 0
+    for id in ids:
+        try:
+            lang_only.append(soltn_dict[id])
+        except KeyError:
+            errors += 1
+    print(len(lang_only))
+    return lang_only
 
 
 def generalize_path(path):
