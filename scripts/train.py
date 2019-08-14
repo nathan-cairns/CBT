@@ -69,8 +69,17 @@ def write_index(index, vocab_size, variable_char_start):
 
 def tokenize_c(programs):
     tokenized = []
+    print("Tokenizing programs")
+    progress_bar = it.ProgressBar(0, len(programs))
+    progress_bar.print_progress_bar()
     for program in programs:
-        tokenized.append(programtokenizer.tokenize_c(program))
+        try:
+            tokenized.append(programtokenizer.tokenize_c(program))
+            progress_bar.increment_work()
+        except Exception:
+            progress_bar.increment_errors()
+        finally:
+            progress_bar.print_progress_bar()
     return "".join(tokenized)
 
 
@@ -90,14 +99,14 @@ if __name__ == '__main__':
     print('Scanning contents of files into memory')
     lang = sys.argv[1]
     if lang.lower() in 'python':
-        file_paths = it.get_file_paths()[:10]
+        file_paths = it.get_file_paths()
         text = get_as_file(file_paths)
     else:
         programs = it.get_lang_files(lang)
         if len(programs) is 0:
             print('No files found with {} as a language'.format(lang))
             sys.exit(1)
-        text = tokenize_lang(programs[:5], lang)
+        text = tokenize_lang(programs, lang)
 
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))
