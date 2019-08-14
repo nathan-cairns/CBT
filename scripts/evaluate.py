@@ -12,6 +12,7 @@ import iteratortools as it
 import generator
 import train
 import model_maker
+import evaluator
 
 import subprocess
 import os
@@ -29,7 +30,6 @@ import collections
 
 OUTPUT_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'eval_output')
 STAT_FILE_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'stats.json')
-PROCESSING_CHUNK_SIZE = 50
 
 
 # ARGPARSE #
@@ -37,6 +37,7 @@ PROCESSING_CHUNK_SIZE = 50
 
 parser = argparse.ArgumentParser(description='Evaluate CBT generated code', prog='CBT')
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
+parser.add_argument('language', help='Pick a programming language to evaluate.', choices=['py', 'c'])
 parser.add_argument('--lines', help='The number of lines to remove and then generate, the default is 1', type=int, choices=range(1,21), default=1)
 
 
@@ -71,23 +72,6 @@ def write_output_file(output_file_path, modified_text):
         output_file.writelines(modified_text)
 
 
-def run_linter(chunk):
-    # From: https://pylint.readthedocs.io/en/latest/user_guide/message-control.html
-    # C convention related checks
-    # R refactoring related checks
-    # W various warnings
-    # E errors, for probable bugs in the code
-    # F fatal, if an error occurred which prevented pylint from doing further processing.
-    pipeline = subprocess.Popen(['pylint', '--msg-template=\'{msg_id}\''] + chunk, stdout=subprocess.PIPE)
-    console_output = pipeline.communicate()
-    return re.findall(r'[CRWEF]\d{4}', str(console_output))
-
-
-def is_same(model_output, orginal):
-    # TODO return whether generated line was different or same as orginal
-    pass
-
-
 def generate_model_output(file_paths):
     # Use model to generate evaulation set
     for file_path in file_paths:
@@ -99,43 +83,6 @@ def generate_model_output(file_paths):
         model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
         with open(file_path, 'w') as output_file:
             output_file.writelines(model_output)
-
-
-def evaluate(model, num_lines, state, file_paths):
-    # For C and R prefixes
-    style_fails = {}
-    # For W and E prefixes
-    warnings = {}
-    # For F prefixes
-    fatal_errors = {}
-
-    # Batch and lint to evaluate
-    in_chunks = chunks(file_paths, PROCESSING_CHUNK_SIZE)
-    progress_bar = it.ProgressBar(0, file_paths.__len__(), prefix='Progress:', suffix='Complete')
-    progress_bar.print_progress_bar()
-    for chunk in in_chunks:
-        linting_results = run_linter(chunk)
-        for linting_result in linting_results:
-            prefix = linting_result[0]
-            if prefix == 'C' or prefix == 'R':
-                style_fails[linting_result] = 1 if linting_result not in style_fails else style_fails[linting_result] + 1 
-            elif prefix == 'W' or prefix == 'E':
-                warnings[linting_result] = 1 if linting_result not in warnings else warnings[linting_result] + 1
-            elif prefix == 'F':
-                fatal_errors[linting_result] = 1 if linting_result not in fatal_errors else fatal_errors[linting_result] + 1
-            else:
-                print('invalid prefix: {}'.format(prefix))
-
-    return {
-        'style_fails': style_fails,
-        'warnings': warnings,
-        'fatal_errors': fatal_errors
-    }
-
-
-def chunks(l, n):
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
 
 
 def print_stats(stats):
@@ -166,6 +113,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     num_lines = args.lines
     checkpoint_dir = args.checkpoint_dir
+    language = args.language
+
+    language_evaluator = None
+    if language == 'py':
+        language_evaluator = evaluator.PyEvaluator()
+    elif language == 'c':
+        language_evaluator = evaluator.CEvaluator()
+    else:
+        raise Exception('A language must be specified!!')
 
     print('Emptying eval directory...')
     shutil.rmtree(OUTPUT_PATH, ignore_errors=True)
@@ -191,12 +147,25 @@ if __name__ == '__main__':
         evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
         generate_model_output(evaluation_files)
 
+        # TODO generate_content = 
+        # {
+        #   [
+        #       orginal_lines: []
+        #       generated_lines: []
+        #       line#s: []
+        #       file_name: ''
+        #   ]
+        # }
+        generated_content = None
+
+
         print('Evaluating...')
         stats = {
             'total_number_of_files': len(evaluation_files),
             'num_lines_removed': num_lines
         }
-        stats.update(evaluate(model, num_lines, state, evaluation_files))
+
+        stats.update(language_evaluator.get_linter_stats(generated_content))
 
         print('Printing stats...')
         print_stats(stats)
