@@ -30,6 +30,7 @@ import collections
 
 OUTPUT_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'eval_output')
 STAT_FILE_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'stats.json')
+GENERATED_CONTENT_FILE_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'generated_cotent.json')
 
 
 # ARGPARSE #
@@ -110,7 +111,7 @@ def print_stats(stats):
             print('==============================')
 
 
-def write_stats_to_file(stats, file_path_output):
+def write_dict_to_file(stats, file_path_output):
     with open(file_path_output, 'w') as fp:
         json.dump(stats, fp)
 
@@ -173,8 +174,12 @@ if __name__ == '__main__':
             'num_lines_removed': num_lines
         }
 
+        print('Writing generated content to file...')
+        write_dict_to_file(generated_content, GENERATED_CONTENT_FILE_PATH)
+
         # TODO uncomment when lint stats work (return just lint for gen line number)
         # stats.update(language_evaluator.get_linter_stats(generated_content))
+        print('Calculating evaluation statistics...')
         stats.update({
             'distance_vector_stats': language_evaluator.get_distance_vector_stats(generated_content),
             'keyword_stats': language_evaluator.get_keyword_stats(generated_content),
@@ -187,6 +192,6 @@ if __name__ == '__main__':
         print_stats(stats)
 
         print('Writing stats to file...')
-        write_stats_to_file(stats, STAT_FILE_PATH)
+        write_dict_to_file(stats, STAT_FILE_PATH)
 
         print('Evaluation complete.')
