@@ -12,6 +12,7 @@ import iteratortools as it
 import generator
 import train
 import model_maker
+import evaluator
 
 import subprocess
 import os
@@ -29,7 +30,7 @@ import collections
 
 OUTPUT_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'eval_output')
 STAT_FILE_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'stats.json')
-PROCESSING_CHUNK_SIZE = 50
+GENERATED_CONTENT_FILE_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'generated_cotent.json')
 
 
 # ARGPARSE #
@@ -37,7 +38,9 @@ PROCESSING_CHUNK_SIZE = 50
 
 parser = argparse.ArgumentParser(description='Evaluate CBT generated code', prog='CBT')
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
+parser.add_argument('language', help='Pick a programming language to evaluate.', choices=['py', 'c'])
 parser.add_argument('--lines', help='The number of lines to remove and then generate, the default is 1', type=int, choices=range(1,21), default=1)
+parser.add_argument('--num_files', help='Specify the number of files to evaluate, helpful if theres heaps to reduce work load', type=int)
 
 
 # FUNCTIONS #
@@ -46,6 +49,7 @@ parser.add_argument('--lines', help='The number of lines to remove and then gene
 def remove_last_lines(file_path, num_lines):
     """Removes the last n lines which contain code"""
     content = []
+    removed_lines = []
     with open(file_path, encoding='ISO-8859-1') as f:
         content += f.readlines()
     
@@ -53,12 +57,14 @@ def remove_last_lines(file_path, num_lines):
     for i, line in reversed(list(enumerate(content))):
         if not line.isspace():
             removed_counter = removed_counter + 1
+
+        removed_lines.append(content[i])
         del content[i]
 
         if removed_counter == num_lines:
             break
 
-    return content
+    return content, removed_lines
 
 
 def write_output_file(output_file_path, modified_text):
@@ -71,71 +77,23 @@ def write_output_file(output_file_path, modified_text):
         output_file.writelines(modified_text)
 
 
-def run_linter(chunk):
-    # From: https://pylint.readthedocs.io/en/latest/user_guide/message-control.html
-    # C convention related checks
-    # R refactoring related checks
-    # W various warnings
-    # E errors, for probable bugs in the code
-    # F fatal, if an error occurred which prevented pylint from doing further processing.
-    pipeline = subprocess.Popen(['pylint', '--msg-template=\'{msg_id}\''] + chunk, stdout=subprocess.PIPE)
-    console_output = pipeline.communicate()
-    return re.findall(r'[CRWEF]\d{4}', str(console_output))
-
-
-def is_same(model_output, orginal):
-    # TODO return whether generated line was different or same as orginal
-    pass
-
-
-def generate_model_output(file_paths):
+def generate_model_output(generated_content):
     # Use model to generate evaulation set
-    for file_path in file_paths:
+    for i, item in enumerate(generated_content):
         # Read contents of file
+        file_path = item['file_name']
         gen_start_string = ''
         with open(file_path, 'r') as f:
             gen_start_string = f.read()
 
-        model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
+        model_output, generated_lines = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
         with open(file_path, 'w') as output_file:
             output_file.writelines(model_output)
+        generated_content[i].update({
+            'generated_lines': generated_lines
+        })
 
-
-def evaluate(model, num_lines, state, file_paths):
-    # For C and R prefixes
-    style_fails = {}
-    # For W and E prefixes
-    warnings = {}
-    # For F prefixes
-    fatal_errors = {}
-
-    # Batch and lint to evaluate
-    in_chunks = chunks(file_paths, PROCESSING_CHUNK_SIZE)
-    progress_bar = it.ProgressBar(0, file_paths.__len__(), prefix='Progress:', suffix='Complete')
-    progress_bar.print_progress_bar()
-    for chunk in in_chunks:
-        linting_results = run_linter(chunk)
-        for linting_result in linting_results:
-            prefix = linting_result[0]
-            if prefix == 'C' or prefix == 'R':
-                style_fails[linting_result] = 1 if linting_result not in style_fails else style_fails[linting_result] + 1 
-            elif prefix == 'W' or prefix == 'E':
-                warnings[linting_result] = 1 if linting_result not in warnings else warnings[linting_result] + 1
-            elif prefix == 'F':
-                fatal_errors[linting_result] = 1 if linting_result not in fatal_errors else fatal_errors[linting_result] + 1
-            else:
-                print('invalid prefix: {}'.format(prefix))
-
-    return {
-        'style_fails': style_fails,
-        'warnings': warnings,
-        'fatal_errors': fatal_errors
-    }
-
-
-def chunks(l, n):
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+    return generated_content
 
 
 def print_stats(stats):
@@ -153,7 +111,7 @@ def print_stats(stats):
             print('==============================')
 
 
-def write_stats_to_file(stats, file_path_output):
+def write_dict_to_file(stats, file_path_output):
     with open(file_path_output, 'w') as fp:
         json.dump(stats, fp)
 
@@ -162,10 +120,22 @@ def write_stats_to_file(stats, file_path_output):
 
 
 if __name__ == '__main__':
+    generated_content = []
+
     # Parse Arguments
     args = parser.parse_args()
     num_lines = args.lines
     checkpoint_dir = args.checkpoint_dir
+    language = args.language
+    num_files = args.num_files
+
+    language_evaluator = None
+    if language == 'py':
+        language_evaluator = evaluator.PyEvaluator()
+    elif language == 'c':
+        language_evaluator = evaluator.CEvaluator()
+    else:
+        raise Exception('A language must be specified!!')
 
     print('Emptying eval directory...')
     shutil.rmtree(OUTPUT_PATH, ignore_errors=True)
@@ -173,12 +143,21 @@ if __name__ == '__main__':
     # Remove last n lines from file and write to new file.
     print('Preparing evaluation set...')
     file_paths = [file_path for file_path in it.get_eval_file_paths()]
-    for file_path in file_paths:
-        modified_text = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
+    for i, file_path in enumerate(file_paths):
+        if num_files != None and i >= num_files:
+            break
+
+        modified_text, removed_lines = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
         if not modified_text:
             print('Error: In {} couldn\'t remove {} lines from the file as it was not long enough. Not considering for evaluation.'.format(file_path, num_lines) )
         else:
-            write_output_file(os.path.join(OUTPUT_PATH, file_path), modified_text)
+            output_file_name = os.path.join(OUTPUT_PATH, file_path) 
+            write_output_file(output_file_name, modified_text)
+            item = {
+                'orginal_lines': removed_lines,
+                'file_name': output_file_name
+            }
+            generated_content.append(item)
 
     with open(os.path.join(checkpoint_dir, train.WORD_TO_INDEX_FILE)) as json_file:
         print('Building model...')
@@ -188,20 +167,31 @@ if __name__ == '__main__':
         model.build(tf.TensorShape([1, None]))
 
         print('Generating model output...')
-        evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
-        generate_model_output(evaluation_files)
+        generated_content = generate_model_output(generated_content)
 
-        print('Evaluating...')
         stats = {
-            'total_number_of_files': len(evaluation_files),
+            'total_number_of_files': len(generated_content),
             'num_lines_removed': num_lines
         }
-        stats.update(evaluate(model, num_lines, state, evaluation_files))
+
+        print('Writing generated content to file...')
+        write_dict_to_file(generated_content, GENERATED_CONTENT_FILE_PATH)
+
+        # TODO uncomment when lint stats work (return just lint for gen line number)
+        # stats.update(language_evaluator.get_linter_stats(generated_content))
+        print('Calculating evaluation statistics...')
+        stats.update({
+            'distance_vector_stats': language_evaluator.get_distance_vector_stats(generated_content),
+            'keyword_stats': language_evaluator.get_keyword_stats(generated_content),
+            'variable_stats': language_evaluator.get_variable_stats(generated_content),
+            'better_than_random_keywords': language_evaluator.get_keyword_random_stats(generated_content),
+            'better_than_random_variables': language_evaluator.get_variable_random_stats(generated_content)
+        })
 
         print('Printing stats...')
         print_stats(stats)
 
         print('Writing stats to file...')
-        write_stats_to_file(stats, STAT_FILE_PATH)
+        write_dict_to_file(stats, STAT_FILE_PATH)
 
         print('Evaluation complete.')

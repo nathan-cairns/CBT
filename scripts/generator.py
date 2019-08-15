@@ -74,7 +74,9 @@ def generate_text(model, start_string, num_lines, index_to_token, var_char_index
         if generated_character == NEW_LINE_TOKEN:
             new_lines = new_lines + 1
 
-    return programtokenizer.untokenize_string(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+    whole_output = programtokenizer.untokenize_string(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()}) 
+    just_generated_lines = programtokenizer.untokenize_string(''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+    return  whole_output, just_generated_lines
 
 
 # MAIN #
