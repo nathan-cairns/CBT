@@ -2,15 +2,13 @@ import iteratortools as it
 import subprocess
 import re
 import keyword
+import Levenshtein
 
 
 class Evaluator():
     def __init__(self):
         self.PROCESSING_CHUNK_SIZE = 50
 
-    def chunks(self, l, n):
-        for i in range(0, len(l), n):
-            yield l[i:i + n]
 
     def get_linter_stats(self, generated_content):
         in_chunks = self.chunks(generated_content, self.PROCESSING_CHUNK_SIZE)
@@ -22,6 +20,42 @@ class Evaluator():
             linting_results = linting_results + self.run_linter(chunk)
         
         return self.generate_linter_stats_from_results(linting_results)
+    
+    
+    def get_distance_vector_stats(self, generated_content):
+        total_distance = 0
+        for item in generated_content:
+            for i, orginal_line in  enumerate(item['orginal_lines']):
+                generated_line = item['generated_lines'][i]
+                total_distance = total_distance + Levenshtein.distance(orginal_line, generated_line)
+        
+        # Return average levenshtein distance
+        return total_distance / (len(generated_content) * len(generated_content[0]['orginal_lines']))
+
+
+    def get_keyword_stats(self, generated_content):
+        keywords = self.get_keyword_list()
+        total_correct_frac = self.__get_count_statistics(keywords, generated_content)
+        # Return the mean of correct keyword guesses
+        return total_correct_frac / (len(generated_content) * len(generated_content[0]['orginal_lines']))
+
+
+    def get_variable_stats(self, generated_content, variable_list):
+        total_correct_frac = self.__get_count_statistics(variable_list, generated_content)
+        # Return the mean of correct variable guesses
+        return total_correct_frac / (len(generated_content) * len(generated_content[0]['orginal_lines']))
+
+
+    def get_keyword_random_stats(self, generated_content):
+        pass
+
+
+    def get_variable_random_stats(self, generated_content):
+        pass
+
+
+    def get_keyword_list(self):
+        raise NotImplementedError('Implement me in subclass')
 
 
     def run_linter(self, chunk):
@@ -30,10 +64,11 @@ class Evaluator():
 
     def generate_linter_stats_from_results(self, linting_results):
         raise NotImplementedError('Implement me in subclass')
-    
-    
-    def get_distance_vector_stats(self, generated_content):
-        pass
+
+
+    def chunks(self, l, n):
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
 
 
     def __get_count_statistics(self, word_list, generated_content):
@@ -70,31 +105,6 @@ class Evaluator():
                 total_correct_frac = total_correct_frac + correct_frac
 
         return total_correct_frac
-
-
-    def get_keyword_stats(self, generated_content):
-        keywords = self.get_keyword_list()
-        total_correct_frac = self.__get_count_statistics(keywords, generated_content)
-        # Return the mean of correct keyword guesses
-        return total_correct_frac / (len(generated_content) * len(generated_content[0]['orginal_lines']))
-
-
-    def get_keyword_list(self):
-        raise NotImplementedError('Implement me in subclass')
-
-
-    def get_variable_stats(self, generated_content, variable_list):
-        total_correct_frac = self.__get_count_statistics(variable_list, generated_content)
-        # Return the mean of correct variable guesses
-        return total_correct_frac / (len(generated_content) * len(generated_content[0]['orginal_lines']))
-
-
-    def get_keyword_random_stats(self, generated_content):
-        pass
-
-
-    def get_variable_random_stats(self, generated_content):
-        pass
 
 
 class PyEvaluator(Evaluator):
