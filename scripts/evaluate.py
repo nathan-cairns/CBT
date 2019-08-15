@@ -39,6 +39,7 @@ parser = argparse.ArgumentParser(description='Evaluate CBT generated code', prog
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
 parser.add_argument('language', help='Pick a programming language to evaluate.', choices=['py', 'c'])
 parser.add_argument('--lines', help='The number of lines to remove and then generate, the default is 1', type=int, choices=range(1,21), default=1)
+parser.add_argument('--num_files', help='Specify the number of files to evaluate, helpful if theres heaps to reduce work load', type=int)
 
 
 # FUNCTIONS #
@@ -125,6 +126,7 @@ if __name__ == '__main__':
     num_lines = args.lines
     checkpoint_dir = args.checkpoint_dir
     language = args.language
+    num_files = args.num_files
 
     language_evaluator = None
     if language == 'py':
@@ -140,7 +142,10 @@ if __name__ == '__main__':
     # Remove last n lines from file and write to new file.
     print('Preparing evaluation set...')
     file_paths = [file_path for file_path in it.get_eval_file_paths()]
-    for file_path in file_paths:
+    for i, file_path in enumerate(file_paths):
+        if num_files != None and i >= num_files:
+            break
+
         modified_text, removed_lines = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
         if not modified_text:
             print('Error: In {} couldn\'t remove {} lines from the file as it was not long enough. Not considering for evaluation.'.format(file_path, num_lines) )
