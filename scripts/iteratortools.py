@@ -39,6 +39,10 @@ TRAINING_SET_FILE_PATHS_CODE_CHEF = [
 
 
 def get_lang_files(language):
+
+    if language == 'python':
+        language = 'pyth'
+
     ids = []
     with open(SOLUTION_PATH_CODE_CHEF, 'r') as f:
         reader = csv.reader(f)
