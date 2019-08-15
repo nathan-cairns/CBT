@@ -183,7 +183,7 @@ if __name__ == '__main__':
         stats.update({
             'distance_vector_stats': language_evaluator.get_distance_vector_stats(generated_content),
             'keyword_stats': language_evaluator.get_keyword_stats(generated_content),
-            'variable_stats': language_evaluator.get_variable_stats(generated_content),
+            # 'variable_stats': language_evaluator.get_variable_stats(generated_content), TODO uncomment when implemented proper
             'better_than_random_keywords': language_evaluator.get_keyword_random_stats(generated_content),
             'better_than_random_variables': language_evaluator.get_variable_random_stats(generated_content)
         })
