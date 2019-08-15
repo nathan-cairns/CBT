@@ -47,6 +47,7 @@ parser.add_argument('--lines', help='The number of lines to remove and then gene
 def remove_last_lines(file_path, num_lines):
     """Removes the last n lines which contain code"""
     content = []
+    removed_lines = []
     with open(file_path, encoding='ISO-8859-1') as f:
         content += f.readlines()
     
@@ -54,12 +55,14 @@ def remove_last_lines(file_path, num_lines):
     for i, line in reversed(list(enumerate(content))):
         if not line.isspace():
             removed_counter = removed_counter + 1
+
+        removed_lines.append(content[i])
         del content[i]
 
         if removed_counter == num_lines:
             break
 
-    return content
+    return content, removed_lines
 
 
 def write_output_file(output_file_path, modified_text):
@@ -72,17 +75,23 @@ def write_output_file(output_file_path, modified_text):
         output_file.writelines(modified_text)
 
 
-def generate_model_output(file_paths):
+def generate_model_output(generated_content):
     # Use model to generate evaulation set
-    for file_path in file_paths:
+    for i, item in enumerate(generated_content):
         # Read contents of file
+        file_path = item['file_name']
         gen_start_string = ''
         with open(file_path, 'r') as f:
             gen_start_string = f.read()
 
-        model_output = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
+        model_output, generated_lines = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
         with open(file_path, 'w') as output_file:
             output_file.writelines(model_output)
+        generated_content[i].update({
+            'generated_lines': generated_lines
+        })
+
+    return generated_content
 
 
 def print_stats(stats):
@@ -109,6 +118,8 @@ def write_stats_to_file(stats, file_path_output):
 
 
 if __name__ == '__main__':
+    generated_content = []
+
     # Parse Arguments
     args = parser.parse_args()
     num_lines = args.lines
@@ -130,11 +141,17 @@ if __name__ == '__main__':
     print('Preparing evaluation set...')
     file_paths = [file_path for file_path in it.get_eval_file_paths()]
     for file_path in file_paths:
-        modified_text = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
+        modified_text, removed_lines = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
         if not modified_text:
             print('Error: In {} couldn\'t remove {} lines from the file as it was not long enough. Not considering for evaluation.'.format(file_path, num_lines) )
         else:
-            write_output_file(os.path.join(OUTPUT_PATH, file_path), modified_text)
+            output_file_name = os.path.join(OUTPUT_PATH, file_path) 
+            write_output_file(output_file_name, modified_text)
+            item = {
+                'orginal_lines': removed_lines,
+                'file_name': output_file_name
+            }
+            generated_content.append(item)
 
     with open(os.path.join(checkpoint_dir, train.WORD_TO_INDEX_FILE)) as json_file:
         print('Building model...')
@@ -144,28 +161,22 @@ if __name__ == '__main__':
         model.build(tf.TensorShape([1, None]))
 
         print('Generating model output...')
-        evaluation_files = [os.path.join(OUTPUT_PATH, file_path) for file_path in it.get_eval_file_paths()]
-        generate_model_output(evaluation_files)
+        generated_content = generate_model_output(generated_content)
 
-        # TODO generate_content = 
-        # {
-        #   [
-        #       orginal_lines: []
-        #       generated_lines: []
-        #       line#s: []
-        #       file_name: ''
-        #   ]
-        # }
-        generated_content = None
-
-
-        print('Evaluating...')
         stats = {
-            'total_number_of_files': len(evaluation_files),
+            'total_number_of_files': len(generated_content),
             'num_lines_removed': num_lines
         }
 
-        stats.update(language_evaluator.get_linter_stats(generated_content))
+        # TODO uncomment when lint stats work (return just lint for gen line number)
+        # stats.update(language_evaluator.get_linter_stats(generated_content))
+        stats.update({
+            'distance_vector_stats': language_evaluator.get_distance_vector_stats(generated_content),
+            'keyword_stats': language_evaluator.get_keyword_stats(generated_content),
+            'variable_stats': language_evaluator.get_variable_stats(generated_content),
+            'better_than_random_keywords': language_evaluator.get_keyword_random_stats(generated_content),
+            'better_than_random_variables': language_evaluator.get_variable_random_stats(generated_content)
+        })
 
         print('Printing stats...')
         print_stats(stats)
