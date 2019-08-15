@@ -126,13 +126,22 @@ class SyntaxTokenizer:
         return result[:-1]  # all but last char which will always be a dedent
 
 
-def tokenize_file(program_as_string):
+def tokenize_python(program_as_string):
+    print(program_as_string)
+    # If the program string comes with a bunch of silly extra indents, get rid of them!
+    indent_level = 0
+    char = program_as_string[0]
+    while char == ' ':
+        indent_level += 1
+        char = program_as_string[indent_level]
+    print('->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' + str(indent_level))
+    print("bcgdevcgfuvu")  # TODO: Deffos fix this if you wanna train python lol
     variables_tokenized, _ = NameTokenizer(utf8char).tokenize(program_as_string)
     syntax_tokenized = SyntaxTokenizer(word_to_token).tokenize(variables_tokenized)
     return syntax_tokenized
 
 
-def untokenize_string(string, token_to_name):
+def untokenize_python(string, token_to_name):
     def remove_all(array, item):
         while item in array:
             array.remove(item)
