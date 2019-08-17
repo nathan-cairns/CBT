@@ -304,16 +304,29 @@ def tokenize_c(text, var_char_index=var_char_index_c):
 
 
 def untokenize_c(text, token_to_name):
+    name_to_token = {v: k for k, v in token_to_name.items()}
     out = text
-    for variable in token_to_name:
-        out = out.replace(token_to_name[variable], (" " + variable + " "))
+    for variable in name_to_token:
+        out = out.replace(name_to_token[variable], (" " + variable + " "))
     for token in token_to_word_c:
         out = out.replace(token, (" " + token_to_word_c[token]) + " ")
 
-    f = tempfile.TemporaryFile(mode='r+', suffix='.c')
-    f.write(out)
-    subprocess.call(['./lib/C-Code-Beautifier', f.name, f.name])
-    to_return = f.read()
-    f.close()
+    list_tokenized = list(out)
+    temp_vars = {}
+    temp_num = 0
+    for i, char in enumerate(list_tokenized):
+        if ord(char) > TOKEN_RANGE_START:
+            if char not in temp_vars:
+                temp_name = 'temp' + str(temp_num)
+                list_tokenized[i] = ' ' + temp_name + ' '
+            else:
+                out[i] = temp_vars[char]
+            temp_num += 1
+    out = ''.join(list_tokenized)
 
+    print(out)
+    f = tempfile.TemporaryFile(mode='r+', encoding='utf8', suffix='.c')
+    f.write(out)
+    #subprocess.call(['./lib/C-Code-Beautifier', f.name, f.name])
+    to_return = f.read()
     return to_return

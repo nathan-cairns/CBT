@@ -25,7 +25,7 @@ parser.add_argument('--lines', help='The number of lines to generate, the defaul
 
 def newline_token(lang):
     if lang.lower() == 'c':
-        return programtokenizer.word_to_token_c[';']
+        return ';'
     elif lang.lower() == 'python':
         return programtokenizer.word_to_token['\n']
 
