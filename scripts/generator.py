@@ -81,13 +81,14 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
         if generated_character == newline_token(language):
             new_lines = new_lines + 1
 
-    untokenized = ''
     if language.lower() == 'c':
-        untokenized = programtokenizer.untokenize_c(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+        whole_output = programtokenizer.untokenize_c(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+        just_generated_lines = whole_output.split('\n')[:-num_lines]
     elif language.lower() == 'python':
-        untokenized = programtokenizer.untokenize_python(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+        whole_output = programtokenizer.untokenize_python(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+        just_generated_lines = programtokenizer.untokenize_python(''.join(text_generated), {v: k for k, v in variable_to_token.items()})
 
-    return untokenized
+    return whole_output, just_generated_lines.split('\n')[0:num_lines]
 
 
 # MAIN #

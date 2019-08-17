@@ -13,7 +13,8 @@ setup(name='cbt',
             'astunparse',
             'pylint ',
             'pycparser',
-            'libclang-py3'
+            'libclang-py3',
+            'python-Levenshtein'
       ],
       dependency_links=[
             'https://github.com/codeauroraforum/comment-filter/tarball/master#egg=comment-filter-v1.0.0'
