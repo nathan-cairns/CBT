@@ -5,15 +5,7 @@ import programtokenizer
 import json
 import train
 import os
-
-
-tf.enable_eager_execution()
-
-
-# CONSTANTS #
-
-
-NEW_LINE_TOKEN = programtokenizer.word_to_token['\n']
+import sys
 
 
 # ARGPARSE #
@@ -21,6 +13,7 @@ NEW_LINE_TOKEN = programtokenizer.word_to_token['\n']
 
 parser = argparse.ArgumentParser(description='Automatically Generate Code', prog='CBT')
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
+parser.add_argument('language', help='The language being generated')
 parser.add_argument('--Cin', help='Provide input via the console')
 parser.add_argument('--Fin', help='Specify a python file to take as input')
 parser.add_argument('--Fout', help='Specify a file to output to')
@@ -30,11 +23,25 @@ parser.add_argument('--lines', help='The number of lines to generate, the defaul
 # FUNCTIONS #
 
 
-def generate_text(model, start_string, num_lines, index_to_token, var_char_index):
-    # Evaluation step (generating text using the learned model)
-    name_tokenizer = programtokenizer.NameTokenizer(var_char_index)
-    start_string, variable_to_token = name_tokenizer.tokenize(start_string)
-    start_string = programtokenizer.SyntaxTokenizer(programtokenizer.word_to_token).tokenize(start_string)
+def newline_token(lang):
+    if lang.lower() == 'c':
+        return programtokenizer.word_to_token_c[';']
+    elif lang.lower() == 'python':
+        return programtokenizer.word_to_token['\n']
+
+
+def generate_text(model, language, start_string, num_lines, index_to_token, var_char_index):
+
+    if language.lower() == 'c':
+        start_string, variable_to_token = programtokenizer.tokenize_c(start_string, var_char_index)
+    elif language.lower() == 'python':
+        # Evaluation step (generating text using the learned model)
+        name_tokenizer = programtokenizer.NameTokenizer(var_char_index)
+        start_string, variable_to_token = name_tokenizer.tokenize(start_string)
+        start_string = programtokenizer.SyntaxTokenizer(programtokenizer.word_to_token).tokenize(start_string)
+    else:
+        print('lang not supported')
+        sys.exit(1)
 
     # Converting our start string to numbers (vectorizing)
     token_to_index = {t: i for i, t in index_to_token.items()}
@@ -71,12 +78,17 @@ def generate_text(model, start_string, num_lines, index_to_token, var_char_index
         generated_character = token_to_index[predicted_id]
         text_generated.append(generated_character)
 
-        if generated_character == NEW_LINE_TOKEN:
+        if generated_character == newline_token(language):
             new_lines = new_lines + 1
 
-    whole_output = programtokenizer.untokenize_string(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()}) 
-    just_generated_lines = programtokenizer.untokenize_string(''.join(text_generated), {v: k for k, v in variable_to_token.items()})
-    return  whole_output, just_generated_lines.split('\n')[0:num_lines]
+    if language.lower() == 'c':
+        whole_output = programtokenizer.untokenize_c(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+        just_generated_lines = whole_output.split('\n')[:-num_lines]
+    elif language.lower() == 'python':
+        whole_output = programtokenizer.untokenize_python(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+        just_generated_lines = programtokenizer.untokenize_python(''.join(text_generated), {v: k for k, v in variable_to_token.items()})
+
+    return whole_output, just_generated_lines.split('\n')[0:num_lines]
 
 
 # MAIN #
@@ -86,6 +98,7 @@ if __name__ == '__main__':
     # Parse arguments
     args = parser.parse_args()
     checkpoint_dir = args.checkpoint_dir
+    language = args.language
     input_dir = args.Fin
     output_dir = args.Fout
     console_input = args.Cin
@@ -114,7 +127,7 @@ if __name__ == '__main__':
             parser.error('No input method specified')
 
         # Generate output
-        generated_text = generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
+        generated_text = generate_text(model, language, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
 
         if output_dir:
             print("Outputting to file {}".format(output_dir))

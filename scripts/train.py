@@ -53,7 +53,7 @@ def tokenize_c(programs):
     progress_bar.print_progress_bar()
     for program in programs:
         try:
-            tokenized.append(programtokenizer.tokenize_c(program))
+            tokenized.append(programtokenizer.tokenize_c(program)[0])
             progress_bar.increment_work()
         except Exception:
             progress_bar.increment_errors()

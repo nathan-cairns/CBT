@@ -300,7 +300,7 @@ def tokenize_c(text, var_char_index=var_char_index_c):
         last_token = token
 
     output = "".join(processed_tokens)
-    return output
+    return output, variable_names
 
 
 def untokenize_c(text, token_to_name):
