@@ -324,9 +324,4 @@ def untokenize_c(text, token_to_name):
             temp_num += 1
     out = ''.join(list_tokenized)
 
-    print(out)
-    f = tempfile.TemporaryFile(mode='r+', encoding='utf8', suffix='.c')
-    f.write(out)
-    #subprocess.call(['./lib/C-Code-Beautifier', f.name, f.name])
-    to_return = f.read()
-    return to_return
+    return out

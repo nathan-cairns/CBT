@@ -1,4 +1,5 @@
 import tensorflow as tf
+import iteratortools as it
 import model_maker
 import argparse
 import programtokenizer
@@ -6,6 +7,8 @@ import json
 import train
 import os
 import sys
+import tempfile
+import subprocess
 
 
 # ARGPARSE #
@@ -83,7 +86,13 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
 
     if language.lower() == 'c':
         whole_output = programtokenizer.untokenize_c(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
-        just_generated_lines = whole_output.split('\n')[:-num_lines]
+        with open(os.path.join(it.REPO_ROOT_PATH, 'tempfile.c'), mode='w+') as f:
+            f.write(whole_output)
+            f.flush()
+            subprocess.call([os.path.join(it.REPO_ROOT_PATH, 'lib', 'C-Code-Beautifier'), f.name, os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c')])
+        with open(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c'), mode='r') as f:
+            whole_output = f.read()
+        just_generated_lines = ''.join(whole_output.split(';')[-(num_lines + 1):])
     elif language.lower() == 'python':
         whole_output = programtokenizer.untokenize_python(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
         just_generated_lines = programtokenizer.untokenize_python(''.join(text_generated), {v: k for k, v in variable_to_token.items()})
