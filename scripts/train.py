@@ -104,7 +104,8 @@ if __name__ == '__main__':
     print('Scanning contents of files into memory')
     lang = sys.argv[1]
     checkpoint_dir = os.path.join('.', sys.argv[2])
-    if len(sys.argv) > 3 and sys.argv[3] == '-l':
+    portion_to_train = float(sys.argv[3])
+    if len(sys.argv) > 4 and sys.argv[4] == '-l':
         load_from_file = True
     else:
         load_from_file = False
@@ -125,6 +126,8 @@ if __name__ == '__main__':
         with open("py_tokenized.txt", "w", encoding='utf8') as f:
             f.write(text)
             sys.exit(0)
+
+    text = text[:int(len(text) * portion_to_train)]
 
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))
