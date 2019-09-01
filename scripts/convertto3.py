@@ -77,7 +77,7 @@ def process_set():
                 chunk[j] = it.generalize_path(os.path.join(it.DATA_PATH, f))
             with open(os.devnull, 'w') as quiet:
                 call(['2to3', '-w', '-n'] + chunk, stderr=quiet, stdout=quiet)
-            progress_bar.increment_work()
+            progress_bar.increment_work(PROCESSING_CHUNK_SIZE)
         except Exception:
             progress_bar.increment_errors()
         finally:

@@ -65,6 +65,11 @@ def tokenize_c(programs):
 
 def tokenize_python(programs):
 
+    programs = []
+    for filename in os.listdir(os.path.join(os.getcwd(), 'temp')):
+        with open(os.path.join(os.getcwd(), 'temp', filename), encoding='utf8') as f:
+            programs += [f.read()]
+
     tokenized = []
     print("Tokenizing Python Programs:")
 
@@ -117,8 +122,9 @@ if __name__ == '__main__':
             print('No files found with {} as a language'.format(lang))
             sys.exit(1)
         text = tokenize_lang(programs, lang)
-        with open("c_tokenized.txt", "w", encoding='utf8') as f:
+        with open("py_tokenized.txt", "w", encoding='utf8') as f:
             f.write(text)
+            sys.exit(0)
 
     print('Length of text: {} characters'.format(len(text)))
     vocab = sorted(set(text))

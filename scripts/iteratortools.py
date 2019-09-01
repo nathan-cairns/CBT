@@ -161,11 +161,11 @@ class ProgressBar:
         self.fill = fill
         self.errors = 0
 
-    def increment_work(self):
-        self.iteration += 1
+    def increment_work(self, work_num=1):
+        self.iteration += work_num
 
-    def increment_errors(self):
-        self.errors += 1
+    def increment_errors(self, error_num=1):
+        self.errors += error_num
 
     def print_progress_bar(self):
         percent = ("{0:." + str(self.decimals) + "f}").format(100 * (self.iteration / float(self.total)))
