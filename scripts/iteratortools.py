@@ -38,7 +38,10 @@ TRAINING_SET_FILE_PATHS_CODE_CHEF = [
 ]
 
 
-def get_lang_files(language):
+def get_lang_files(language, training_only=False, evaluation_only=False, training_portion=0.7):
+
+    if training_only and evaluation_only:
+        raise SystemError('Only allowed training or evaluation, pick one!')
 
     if language == 'python':
         language = 'pyth'
@@ -67,6 +70,11 @@ def get_lang_files(language):
         except KeyError:
             errors += 1
     print(len(lang_only))
+
+    if training_only:
+        return lang_only[:int(len(lang_only) * training_portion)]
+    if evaluation_only:
+        return lang_only[int(len(lang_only) * training_portion):]
     return lang_only
 
 

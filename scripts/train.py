@@ -11,6 +11,7 @@ import programtokenizer
 import model_maker
 import json
 import sys
+import convertto3 as p23
 
 
 # CONSTANTS #
@@ -61,7 +62,9 @@ def tokenize_c(programs):
             progress_bar.print_progress_bar()
     return "".join(tokenized)
 
+
 def tokenize_python(programs):
+
     tokenized = []
     print("Tokenizing Python Programs:")
 
@@ -69,9 +72,10 @@ def tokenize_python(programs):
     progress_bar.print_progress_bar()
     for program in programs:
         try:
+            program = p23.normalize_indenting(program)
             tokenized.append(programtokenizer.tokenize_python(program))
             progress_bar.increment_work()
-        except KeyError:
+        except Exception:
             progress_bar.increment_errors()
         finally:
             progress_bar.print_progress_bar()
@@ -95,7 +99,7 @@ def tokenize_lang(programs, lang):
 if __name__ == '__main__':
     print('Scanning contents of files into memory')
     lang = sys.argv[1]
-    if sys.argv[2] == '-l':
+    if len(sys.argv) > 2 and sys.argv[2] == '-l':
         load_from_file = True
     else:
         load_from_file = False
@@ -106,8 +110,9 @@ if __name__ == '__main__':
     if load_from_file:
         with open(os.path.join(it.REPO_ROOT_PATH, "data", "{}_tokenized.txt".format(lang)), encoding='utf8') as f:
             text = f.read()
+            text = text[:int(len(text) * 0.7)]
     else:
-        programs = it.get_lang_files(lang)
+        programs = it.get_lang_files(lang, training_only=True)
         if len(programs) is 0:
             print('No files found with {} as a language'.format(lang))
             sys.exit(1)

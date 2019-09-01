@@ -93,6 +93,8 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
         with open(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c'), mode='r') as f:
             whole_output = f.read()
         just_generated_lines = ''.join(whole_output.split(';')[-(num_lines + 1):])
+        os.remove(os.path.join(it.REPO_ROOT_PATH, 'tempfile.c'))
+        os.remove(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c'))
     elif language.lower() == 'python':
         whole_output = programtokenizer.untokenize_python(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
         just_generated_lines = programtokenizer.untokenize_python(''.join(text_generated), {v: k for k, v in variable_to_token.items()})
