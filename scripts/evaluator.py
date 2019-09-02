@@ -46,12 +46,37 @@ class Evaluator():
         return total_correct_frac / (len(generated_content) * len(generated_content[0]['orginal_lines']))
 
 
+    def get_first_keyword_random_stats(self, generated_content):
+        pass
+
+
     def get_keyword_random_stats(self, generated_content):
         pass
 
 
     def get_variable_random_stats(self, generated_content):
         pass
+
+
+    def get_average_orginal_line_length(self, generated_content):
+        return self.__get_average_line_length(generated_content, 'orginal_lines')
+
+
+    def get_average_generated_line_length(self, generated_content):
+        return self.__get_average_line_length(generated_content, 'generated_lines')
+
+
+    def __get_average_line_length(self, generated_content, lines):
+        total_line_length = 0
+        for item in generated_content:
+            for line in item[lines]:
+                total_line_length = total_line_length + len(line)
+
+        return total_line_length / len(generated_content * len(generated_content[0][lines]))
+
+
+    def get_number_keywords(self):
+        return len(self.get_keyword_list())
 
 
     def get_keyword_list(self):

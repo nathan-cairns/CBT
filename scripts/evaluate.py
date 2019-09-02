@@ -196,10 +196,13 @@ if __name__ == '__main__':
         print('Calculating evaluation statistics...')
         stats.update({
             'distance_vector_stats': language_evaluator.get_distance_vector_stats(generated_content),
+            'average_orgnial_line_length': language_evaluator.get_average_orginal_line_length(generated_content),
+            'average_generated_line_length': language_evaluator.get_average_generated_line_length(generated_content),
             'keyword_stats': language_evaluator.get_keyword_stats(generated_content),
             # 'variable_stats': language_evaluator.get_variable_stats(generated_content), TODO uncomment when implemented proper
+            'better_than_random_first_keyword': language_evaluator.get_first_keyword_random_stats(generated_content),
             'better_than_random_keywords': language_evaluator.get_keyword_random_stats(generated_content),
-            'better_than_random_variables': language_evaluator.get_variable_random_stats(generated_content)
+            'better_than_random_variables': language_evaluator.get_variable_random_stats(generated_content),
         })
 
         print('Printing stats...')
