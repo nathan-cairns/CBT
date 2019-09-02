@@ -3,6 +3,7 @@ import subprocess
 import re
 import Levenshtein
 import programtokenizer
+import ast
 
 
 class Evaluator():
@@ -45,8 +46,8 @@ class Evaluator():
     def get_variable_stats(self, generated_content):
         total_correct_frac = 0
         for item in generated_content:
-            total_correct_frac =  total_correct_frac + self.__get_count_statistics(item, self.get_variable_list())
-        
+            total_correct_frac =  total_correct_frac + self.__get_count_statistics(item, self.get_variable_list(item['file_name']))
+
         # Return the mean of correct variable guesses
         return total_correct_frac / self.__get_total_number_of_lines(generated_content)
 
@@ -62,7 +63,7 @@ class Evaluator():
     def get_first_variable_stats(self, generated_content):
         correct_guesses = 0
         for item in generated_content:
-            correct_guesses = correct_guesses + self.__get_first_occurrence_correct_guesses(item, self.get_variable_list())
+            correct_guesses = correct_guesses + self.__get_first_occurrence_correct_guesses(item, self.get_variable_list('file_name'))
         
         return correct_guesses / self.__get_total_number_of_lines(generated_content)
 
@@ -82,7 +83,7 @@ class Evaluator():
         raise NotImplementedError('Implement in subclass')
 
 
-    def get_variable_list(self):
+    def get_variable_list(self, filename):
         raise NotImplementedError('Implement in subclass')
 
 
@@ -172,6 +173,17 @@ class Evaluator():
 
 
 class PyEvaluator(Evaluator):
+    class VariableExtractor(ast.NodeTransformer):
+        def __init__(self):
+            self.variables = []
+
+        def visit_Name(self, node: ast.Name):
+            self.variables.append(node)
+
+        def get_variables(self):
+            return self.variables
+
+
     def run_linter(self, chunk):
         # From: https://pylint.readthedocs.io/en/latest/user_guide/message-control.html
         # C convention related checks
@@ -214,12 +226,15 @@ class PyEvaluator(Evaluator):
         return programtokenizer.words
 
 
-    def get_variable_list(self):
-        raise NotImplementedError('Implement me')
+    def get_variable_list(self, filename):
+        with open(filename) as f:
+            contents = f.read()
+            variableExtractor = self.VariableExtractor()
+            variableExtractor.visit(contents)
+            return variableExtractor.get_variables()
 
 
 class CEvaluator(Evaluator):
-    
     def run_linter(self, chunk):
         #TODO implement
         raise NotImplementedError('Implement me')
@@ -234,6 +249,6 @@ class CEvaluator(Evaluator):
         return programtokenizer.c_keywords
 
 
-    def get_variable_list(self):
+    def get_variable_list(self, filename):
         raise NotImplementedError('Implement me')
 
