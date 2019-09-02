@@ -79,22 +79,31 @@ def generate_model_output(generated_content, language):
     progress_bar = it.ProgressBar(0, len(generated_content))
     progress_bar.print_progress_bar()
     # Use model to generate evaulation set
+    to_be_removed = []
     for i, item in enumerate(generated_content):
-        # Read contents of file
-        file_path = item['file_name']
-        gen_start_string = ''
-        with open(file_path, 'r', encoding='utf8') as f:
-            gen_start_string = f.read()
+        try:
+            # Read contents of file
+            file_path = item['file_name']
+            gen_start_string = ''
+            with open(file_path, 'r', encoding='utf8') as f:
+                gen_start_string = f.read()
 
-        model_output, generated_lines = generator.generate_text(model, language, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
-        with open(file_path, 'w') as output_file:
-            output_file.writelines(model_output)
-        generated_content[i].update({
-            'generated_lines': generated_lines
-        })
-        progress_bar.increment_work()
-        progress_bar.print_progress_bar()
+            model_output, generated_lines = generator.generate_text(model, language, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
+            with open(file_path, 'w') as output_file:
+                output_file.writelines(model_output)
+            generated_content[i].update({
+                'generated_lines': generated_lines
+            })
+        except Exception:
+            progress_bar.increment_errors()
+            to_be_removed.append(item)
+        finally:
+            progress_bar.increment_work()
+            progress_bar.print_progress_bar()
 
+    for remove_me in to_be_removed:
+        generated_content.remove(remove_me)
+    print(generated_content)
     return generated_content
 
 
@@ -116,6 +125,12 @@ def print_stats(stats):
 def write_dict_to_file(stats, file_path_output):
     with open(file_path_output, 'w') as fp:
         json.dump(stats, fp)
+
+
+def sorted_alphanumeric(data):
+    convert = lambda text: int(text.split('.')[0]) if text.split('.')[0].isdigit() else text.split('.')[0].lower()
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+    return sorted(data, key=alphanum_key)
 
 
 # MAIN #
@@ -148,7 +163,7 @@ if __name__ == '__main__':
         programs = [file_path for file_path in it.get_lang_files(language, evaluation_only=True)] if num_files == -1 else [file_path for file_path in it.get_lang_files(language, evaluation_only=True)[:num_files]]
     if language == 'py':
         programs = []
-        files = os.listdir(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this')) if num_files == -1 else os.listdir(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this'))[:num_files]
+        files = os.listdir(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this')) if num_files == -1 else sorted_alphanumeric(os.listdir(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this')))[:num_files]
         for file_name in files:
             with open(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this', file_name), encoding='utf8') as f:
                 programs += [f.read()]
@@ -170,6 +185,7 @@ if __name__ == '__main__':
                 'file_name': output_file_name
             }
             generated_content.append(item)
+
         progress_bar.increment_work()
         progress_bar.print_progress_bar()
 
