@@ -43,7 +43,7 @@ def get_lang_files(language, training_only=False, evaluation_only=False, trainin
     if training_only and evaluation_only:
         raise SystemError('Only allowed training or evaluation, pick one!')
 
-    if language == 'python':
+    if language == 'python' or language == 'py':
         language = 'pyth'
 
     ids = []

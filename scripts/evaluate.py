@@ -16,6 +16,7 @@ import evaluator
 
 import subprocess
 import os
+import sys
 import argparse
 import json
 import shutil
@@ -40,25 +41,22 @@ parser = argparse.ArgumentParser(description='Evaluate CBT generated code', prog
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
 parser.add_argument('language', help='Pick a programming language to evaluate.', choices=['py', 'c'])
 parser.add_argument('--lines', help='The number of lines to remove and then generate, the default is 1', type=int, choices=range(1,21), default=1)
-parser.add_argument('--num_files', help='Specify the number of files to evaluate, helpful if theres heaps to reduce work load', type=int)
+parser.add_argument('--num_files', help='Specify the number of files to evaluate, helpful if theres heaps to reduce work load', type=int, default=-1)
 
 
 # FUNCTIONS #
 
 
-def remove_last_lines(file_path, num_lines):
+def remove_last_lines(program, num_lines):
     """Removes the last n lines which contain code"""
-    content = []
+    content = program.split('\n')
     removed_lines = []
-    with open(file_path, encoding='ISO-8859-1') as f:
-        content += f.readlines()
-    
     removed_counter = 0
     for i, line in reversed(list(enumerate(content))):
-        if not line.isspace():
+        if line.strip() and line.strip() != '}':
             removed_counter = removed_counter + 1
+            removed_lines.append(content[i].strip())
 
-        removed_lines.append(content[i])
         del content[i]
 
         if removed_counter == num_lines:
@@ -73,25 +71,29 @@ def write_output_file(output_file_path, modified_text):
         os.makedirs(os.path.dirname(output_file_path))
 
     # write to file
-    with open(output_file_path, 'w') as output_file:
-        output_file.writelines(modified_text)
+    with open(output_file_path, 'w', encoding='utf8') as output_file:
+        output_file.write('\n'.join(modified_text) + '\n')
 
 
-def generate_model_output(generated_content):
+def generate_model_output(generated_content, language):
+    progress_bar = it.ProgressBar(0, len(generated_content))
+    progress_bar.print_progress_bar()
     # Use model to generate evaulation set
     for i, item in enumerate(generated_content):
         # Read contents of file
         file_path = item['file_name']
         gen_start_string = ''
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf8') as f:
             gen_start_string = f.read()
 
-        model_output, generated_lines = generator.generate_text(model, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
+        model_output, generated_lines = generator.generate_text(model, language, gen_start_string, num_lines, state['index_to_token'], state['variable_char_start'])
         with open(file_path, 'w') as output_file:
             output_file.writelines(model_output)
         generated_content[i].update({
             'generated_lines': generated_lines
         })
+        progress_bar.increment_work()
+        progress_bar.print_progress_bar()
 
     return generated_content
 
@@ -142,22 +144,34 @@ if __name__ == '__main__':
 
     # Remove last n lines from file and write to new file.
     print('Preparing evaluation set...')
-    file_paths = [file_path for file_path in it.get_eval_file_paths()]
-    for i, file_path in enumerate(file_paths):
+    if language == 'c':
+        programs = [file_path for file_path in it.get_lang_files(language, evaluation_only=True)] if num_files == -1 else [file_path for file_path in it.get_lang_files(language, evaluation_only=True)[:num_files]]
+    if language == 'py':
+        programs = []
+        files = os.listdir(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this')) if num_files == -1 else os.listdir(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this'))[:num_files]
+        for file_name in files:
+            with open(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this', file_name), encoding='utf8') as f:
+                programs += [f.read()]
+
+    progress_bar = it.ProgressBar(0, len(programs))
+    progress_bar.print_progress_bar()
+    for i, program in enumerate(programs):
         if num_files != None and i >= num_files:
             break
 
-        modified_text, removed_lines = remove_last_lines(os.path.join(it.DATA_PATH, file_path), num_lines)
+        modified_text, removed_lines = remove_last_lines(program, num_lines)
         if not modified_text:
-            print('Error: In {} couldn\'t remove {} lines from the file as it was not long enough. Not considering for evaluation.'.format(file_path, num_lines) )
+            print('Error: In {} couldn\'t remove {} lines from the file as it was not long enough. Not considering for evaluation.'.format(str(i), num_lines) )
         else:
-            output_file_name = os.path.join(OUTPUT_PATH, file_path) 
+            output_file_name = os.path.join(OUTPUT_PATH, '{}.py'.format(str(i)))
             write_output_file(output_file_name, modified_text)
             item = {
                 'orginal_lines': removed_lines,
                 'file_name': output_file_name
             }
             generated_content.append(item)
+        progress_bar.increment_work()
+        progress_bar.print_progress_bar()
 
     with open(os.path.join(checkpoint_dir, train.WORD_TO_INDEX_FILE)) as json_file:
         print('Building model...')
@@ -167,7 +181,7 @@ if __name__ == '__main__':
         model.build(tf.TensorShape([1, None]))
 
         print('Generating model output...')
-        generated_content = generate_model_output(generated_content)
+        generated_content = generate_model_output(generated_content, language)
 
         stats = {
             'total_number_of_files': len(generated_content),

@@ -29,15 +29,14 @@ parser.add_argument('--lines', help='The number of lines to generate, the defaul
 def newline_token(lang):
     if lang.lower() == 'c':
         return ';'
-    elif lang.lower() == 'python':
+    elif lang.lower() in 'python':
         return programtokenizer.word_to_token['\n']
 
 
 def generate_text(model, language, start_string, num_lines, index_to_token, var_char_index):
-
     if language.lower() == 'c':
         start_string, variable_to_token = programtokenizer.tokenize_c(start_string, var_char_index)
-    elif language.lower() == 'python':
+    elif language.lower() in 'python':
         # Evaluation step (generating text using the learned model)
         name_tokenizer = programtokenizer.NameTokenizer(var_char_index)
         start_string, variable_to_token = name_tokenizer.tokenize(start_string)
@@ -95,7 +94,7 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
         just_generated_lines = ''.join(whole_output.split(';')[-(num_lines + 1):])
         os.remove(os.path.join(it.REPO_ROOT_PATH, 'tempfile.c'))
         os.remove(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c'))
-    elif language.lower() == 'python':
+    elif language.lower() in 'python':
         whole_output = programtokenizer.untokenize_python(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
         just_generated_lines = programtokenizer.untokenize_python(''.join(text_generated), {v: k for k, v in variable_to_token.items()})
 
