@@ -1,8 +1,8 @@
 import iteratortools as it
 import subprocess
 import re
-import keyword
 import Levenshtein
+import programtokenizer
 
 
 class Evaluator():
@@ -147,7 +147,7 @@ class PyEvaluator(Evaluator):
 
 
     def get_keyword_list(self):
-        return keyword.kwlist
+        return programtokenizer.words
 
 
 class CEvaluator(Evaluator):
@@ -163,6 +163,5 @@ class CEvaluator(Evaluator):
 
 
     def get_keyword_list(self):
-        #TODO implement
-        raise NotImplementedError('Implement me')
+        return programtokenizer.c_keywords
 
