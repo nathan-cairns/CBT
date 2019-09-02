@@ -134,8 +134,6 @@ class Evaluator():
         return correct_guesses
 
 
-
-    # TODO extract method so only the line iteration is done in this function.
     def __get_count_statistics(self, item, word_list):
         total_correct_frac = 0
 
@@ -250,5 +248,6 @@ class CEvaluator(Evaluator):
 
 
     def get_variable_list(self, filename):
+        #TODO implement
         raise NotImplementedError('Implement me')
 
