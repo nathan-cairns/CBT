@@ -64,6 +64,7 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
 
     new_lines = 0
 
+    generated_line = ''
     while new_lines != num_lines:
         predictions = model(input_eval)
         # remove the batch dimension
@@ -78,10 +79,14 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
         input_eval = tf.expand_dims([predicted_id], 0)
 
         generated_character = token_to_index[predicted_id]
-        text_generated.append(generated_character)
+        generated_line += generated_character
 
         if generated_character == newline_token(language):
-            new_lines = new_lines + 1
+            if generated_line.strip() != '':
+                new_lines += 1
+                text_generated.append(generated_line)
+            generated_line = ''
+
 
     if language.lower() == 'c':
         whole_output = programtokenizer.untokenize_c(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})

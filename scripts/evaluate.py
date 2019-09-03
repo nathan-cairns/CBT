@@ -94,7 +94,7 @@ def generate_model_output(generated_content, language):
             generated_content[i].update({
                 'generated_lines': generated_lines
             })
-        except Exception:
+        except Exception as e:
             progress_bar.increment_errors()
             to_be_removed.append(item)
         finally:
@@ -103,7 +103,6 @@ def generate_model_output(generated_content, language):
 
     for remove_me in to_be_removed:
         generated_content.remove(remove_me)
-    print(generated_content)
     return generated_content
 
 
