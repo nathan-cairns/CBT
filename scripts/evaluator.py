@@ -3,6 +3,7 @@ import subprocess
 import re
 import Levenshtein
 import programtokenizer
+import ast
 
 
 class Evaluator():
@@ -25,45 +26,82 @@ class Evaluator():
     def get_distance_vector_stats(self, generated_content):
         total_distance = 0
         for item in generated_content:
-            for i, orginal_line in  enumerate(item['orginal_lines']):
+            for i, original_line in  enumerate(item['original_lines']):
                 generated_line = item['generated_lines'][i]
-                total_distance = total_distance + Levenshtein.distance(orginal_line, generated_line)
+                total_distance = total_distance + Levenshtein.distance(original_line, generated_line)
         
         # Return average levenshtein distance
-        return total_distance / (len(generated_content) * len(generated_content[0]['orginal_lines']))
+        return total_distance / self.__get_total_number_of_lines(generated_content)
 
 
     def get_keyword_stats(self, generated_content):
-        keywords = self.get_keyword_list()
-        total_correct_frac = self.__get_count_statistics(keywords, generated_content)
+        total_correct_frac = 0
+        for item in generated_content:
+            total_correct_frac = total_correct_frac + self.__get_count_statistics(item, self.get_keyword_list())
+
         # Return the mean of correct keyword guesses
-        return total_correct_frac / (len(generated_content) * len(generated_content[0]['orginal_lines']))
+        return total_correct_frac / self.__get_total_number_of_lines(generated_content)
 
 
-    def get_variable_stats(self, generated_content, variable_list):
-        total_correct_frac = self.__get_count_statistics(variable_list, generated_content)
+    def get_variable_stats(self, generated_content):
+        total_correct_frac = 0
+        for item in generated_content:
+            total_correct_frac =  total_correct_frac + self.__get_count_statistics(item, self.get_variable_list(item['file_name']))
+
         # Return the mean of correct variable guesses
-        return total_correct_frac / (len(generated_content) * len(generated_content[0]['orginal_lines']))
+        return total_correct_frac / self.__get_total_number_of_lines(generated_content)
 
 
-    def get_first_keyword_random_stats(self, generated_content):
-        pass
+    def get_first_keyword_stats(self, generated_content):
+        correct_guesses = 0
+        for item in generated_content:
+            correct_guesses = correct_guesses + self.__get_first_occurrence_correct_guesses(item, self.get_keyword_list())
+
+        return correct_guesses / self.__get_total_number_of_lines(generated_content)
 
 
-    def get_keyword_random_stats(self, generated_content):
-        pass
+    def get_first_variable_stats(self, generated_content):
+        correct_guesses = 0
+        for item in generated_content:
+            correct_guesses = correct_guesses + self.__get_first_occurrence_correct_guesses(item, self.get_variable_list('file_name'))
+        
+        return correct_guesses / self.__get_total_number_of_lines(generated_content)
 
-
-    def get_variable_random_stats(self, generated_content):
-        pass
-
-
-    def get_average_orginal_line_length(self, generated_content):
-        return self.__get_average_line_length(generated_content, 'orginal_lines')
+    def get_average_original_line_length(self, generated_content):
+        return self.__get_average_line_length(generated_content, 'original_lines')
 
 
     def get_average_generated_line_length(self, generated_content):
         return self.__get_average_line_length(generated_content, 'generated_lines')
+
+
+    def get_number_keywords(self):
+        return len(self.get_keyword_list())
+
+
+    def get_keyword_list(self):
+        raise NotImplementedError('Implement in subclass')
+
+
+    def get_variable_list(self, filename):
+        raise NotImplementedError('Implement in subclass')
+
+
+    def run_linter(self, chunk):
+        raise NotImplementedError('Implement in subclass')
+
+
+    def generate_linter_stats_from_results(self, linting_results):
+        raise NotImplementedError('Implement in subclass')
+
+
+    def chunks(self, l, n):
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
+
+
+    def __get_total_number_of_lines(self, generated_content):
+        return len(generated_content * len(generated_content[0]['original_lines']))
 
 
     def __get_average_line_length(self, generated_content, lines):
@@ -72,67 +110,78 @@ class Evaluator():
             for line in item[lines]:
                 total_line_length = total_line_length + len(line)
 
-        return total_line_length / len(generated_content * len(generated_content[0][lines]))
+        return total_line_length / self.__get_total_number_of_lines
 
 
-    def get_number_keywords(self):
-        return len(self.get_keyword_list())
-
-
-    def get_keyword_list(self):
-        raise NotImplementedError('Implement me in subclass')
-
-
-    def run_linter(self, chunk):
-        raise NotImplementedError('Implement me in subclass')
-
-
-    def generate_linter_stats_from_results(self, linting_results):
-        raise NotImplementedError('Implement me in subclass')
-
-
-    def chunks(self, l, n):
-        for i in range(0, len(l), n):
-            yield l[i:i + n]
-
-
-    def __get_count_statistics(self, word_list, generated_content):
-        total_correct_frac = 0
-        for item in generated_content:
-            for i, orginal_line in enumerate(item['orginal_lines']):
-                orginal_keywords = dict.fromkeys(word_list, 0)
-                generated_keywords = dict.fromkeys(word_list, 0)
-
-                orginal_arr = orginal_line.split(' ')
-                for word in orginal_arr:
-                    if word in word_list:
-                        orginal_keywords[word] = orginal_keywords[word] + 1
-
-                generated_arr = item['generated_lines'][i].split(' ')
-                for word in generated_arr:
-                    if word in word_list:
-                        generated_keywords[word] = generated_keywords[word] + 1
-
-                total_kwords_in_orginal = sum(orginal_keywords.values())
-                correct_guesses = 0
-
-                if total_kwords_in_orginal == 0:
-                    total_correct_frac = total_correct_frac + 1
+    def __get_first_occurrence_correct_guesses(self, item, word_list):
+        correct_guesses = 0
+        for i, original_line in enumerate(item['original_line']):
+            first_original_word, first_generated_word = ''
+            original_arr = original_line.split(' ')
+            for word in original_arr:
+                if word in word_list:
+                    first_original_word = word
                     break
 
-                for kword in orginal_keywords:
-                    if generated_keywords[kword] >= orginal_keywords[kword]:
-                        correct_guesses = correct_guesses + orginal_keywords[kword]
-                    else:
-                        correct_guesses = correct_guesses + generated_keywords[kword]
+            generated_arr = item['generated_lines'][i].split(' ')
+            for word in generated_arr:
+                if word in word_list:
+                    first_generated_word = word
 
-                correct_frac = correct_guesses / total_kwords_in_orginal
-                total_correct_frac = total_correct_frac + correct_frac
+            if first_original_word == first_generated_word:
+                correct_guesses = correct_guesses + 1
+
+        return correct_guesses
+
+
+    def __get_count_statistics(self, item, word_list):
+        total_correct_frac = 0
+
+        for i, original_line in enumerate(item['original_lines']):
+            original_keywords = dict.fromkeys(word_list, 0)
+            generated_keywords = dict.fromkeys(word_list, 0)
+            original_arr = original_line.split(' ')
+
+            for word in original_arr:
+                if word in word_list:
+                    original_keywords[word] = original_keywords[word] + 1
+
+            generated_arr = item['generated_lines'][i].split(' ')
+            for word in generated_arr:
+                if word in word_list:
+                    generated_keywords[word] = generated_keywords[word] + 1
+
+            total_kwords_in_original = sum(original_keywords.values())
+            correct_guesses = 0
+
+            if total_kwords_in_original == 0:
+                total_correct_frac = total_correct_frac + 1
+                break
+
+            for kword in original_keywords:
+                if generated_keywords[kword] >= original_keywords[kword]:
+                    correct_guesses = correct_guesses + original_keywords[kword]
+                else:
+                    correct_guesses = correct_guesses + generated_keywords[kword]
+
+            correct_frac = correct_guesses / total_kwords_in_original
+            total_correct_frac = total_correct_frac + correct_frac
 
         return total_correct_frac
 
 
 class PyEvaluator(Evaluator):
+    class VariableExtractor(ast.NodeTransformer):
+        def __init__(self):
+            self.variables = []
+
+        def visit_Name(self, node: ast.Name):
+            self.variables.append(node)
+
+        def get_variables(self):
+            return self.variables
+
+
     def run_linter(self, chunk):
         # From: https://pylint.readthedocs.io/en/latest/user_guide/message-control.html
         # C convention related checks
@@ -175,8 +224,15 @@ class PyEvaluator(Evaluator):
         return programtokenizer.words
 
 
+    def get_variable_list(self, filename):
+        with open(filename) as f:
+            contents = f.read()
+            variableExtractor = self.VariableExtractor()
+            variableExtractor.visit(contents)
+            return variableExtractor.get_variables()
+
+
 class CEvaluator(Evaluator):
-    
     def run_linter(self, chunk):
         #TODO implement
         raise NotImplementedError('Implement me')
@@ -189,4 +245,9 @@ class CEvaluator(Evaluator):
 
     def get_keyword_list(self):
         return programtokenizer.c_keywords
+
+
+    def get_variable_list(self, filename):
+        #TODO implement
+        raise NotImplementedError('Implement me')
 
