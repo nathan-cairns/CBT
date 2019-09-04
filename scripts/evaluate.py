@@ -181,7 +181,8 @@ if __name__ == '__main__':
             write_output_file(output_file_name, modified_text)
             item = {
                 'original_lines': removed_lines,
-                'file_name': output_file_name
+                'file_name': output_file_name,
+                'original_program': program
             }
             generated_content.append(item)
 

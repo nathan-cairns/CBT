@@ -46,7 +46,7 @@ class Evaluator():
     def get_variable_stats(self, generated_content):
         total_correct_frac = 0
         for item in generated_content:
-            total_correct_frac =  total_correct_frac + self.__get_count_statistics(item, self.get_variable_list(item['file_name']))
+            total_correct_frac =  total_correct_frac + self.__get_count_statistics(item, self.get_variable_list(item['original_program']))
 
         # Return the mean of correct variable guesses
         return total_correct_frac / self.__get_total_number_of_lines(generated_content)
@@ -63,7 +63,7 @@ class Evaluator():
     def get_first_variable_stats(self, generated_content):
         correct_guesses = 0
         for item in generated_content:
-            correct_guesses = correct_guesses + self.__get_first_occurrence_correct_guesses(item, self.get_variable_list('file_name'))
+            correct_guesses = correct_guesses + self.__get_first_occurrence_correct_guesses(item, self.get_variable_list(item['original_program']))
         
         return correct_guesses / self.__get_total_number_of_lines(generated_content)
 
@@ -83,7 +83,7 @@ class Evaluator():
         raise NotImplementedError('Implement in subclass')
 
 
-    def get_variable_list(self, filename):
+    def get_variable_list(self, program):
         raise NotImplementedError('Implement in subclass')
 
 
@@ -101,7 +101,7 @@ class Evaluator():
 
 
     def __get_total_number_of_lines(self, generated_content):
-        return len(generated_content * len(generated_content[0]['original_lines']))
+        return len(generated_content) * len(generated_content[0]['original_lines'])
 
 
     def __get_average_line_length(self, generated_content, lines):
@@ -110,13 +110,14 @@ class Evaluator():
             for line in item[lines]:
                 total_line_length = total_line_length + len(line)
 
-        return total_line_length / self.__get_total_number_of_lines
+        return total_line_length / self.__get_total_number_of_lines(generated_content)
 
 
     def __get_first_occurrence_correct_guesses(self, item, word_list):
         correct_guesses = 0
-        for i, original_line in enumerate(item['original_line']):
-            first_original_word, first_generated_word = ''
+        for i, original_line in enumerate(item['original_lines']):
+            first_original_word = ''
+            first_generated_word = ''
             original_arr = original_line.split(' ')
             for word in original_arr:
                 if word in word_list:
@@ -176,7 +177,7 @@ class PyEvaluator(Evaluator):
             self.variables = []
 
         def visit_Name(self, node: ast.Name):
-            self.variables.append(node)
+            self.variables.append(node.id)
 
         def get_variables(self):
             return self.variables
@@ -224,12 +225,11 @@ class PyEvaluator(Evaluator):
         return programtokenizer.words
 
 
-    def get_variable_list(self, filename):
-        with open(filename) as f:
-            contents = f.read()
-            variableExtractor = self.VariableExtractor()
-            variableExtractor.visit(contents)
-            return variableExtractor.get_variables()
+    def get_variable_list(self, program):
+        contents = ast.parse(program)
+        variableExtractor = self.VariableExtractor()
+        variableExtractor.visit(contents)
+        return variableExtractor.get_variables()
 
 
 class CEvaluator(Evaluator):
@@ -247,7 +247,7 @@ class CEvaluator(Evaluator):
         return programtokenizer.c_keywords
 
 
-    def get_variable_list(self, filename):
+    def get_variable_list(self, program):
         #TODO implement
         raise NotImplementedError('Implement me')
 

@@ -9,7 +9,7 @@ import os
 import sys
 import tempfile
 import subprocess
-
+tf.enable_eager_execution()
 
 # ARGPARSE #
 
