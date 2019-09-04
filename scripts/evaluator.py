@@ -4,6 +4,7 @@ import re
 import Levenshtein
 import programtokenizer
 import ast
+import tempfile
 import clang.cindex
 import clang.enumerations
 
@@ -251,7 +252,15 @@ class CEvaluator(Evaluator):
 
     def get_variable_list(self, filename):
         variables = []
-
         index = clang.cindex.Index.create()
+        f = tempfile.TemporaryFile(mode='r+', suffix='.c')
+        f.write(filename)
+        f.read()
         tu = index.parse(f.name)
+        f.close()
         tokens = tu.cursor.get_tokens()
+        for token in tokens:
+            if token.kind.name == 'IDENTIFIER' and token.spelling not in variables:
+                variables.append(token.spelling)
+
+        return variables
