@@ -4,6 +4,8 @@ import re
 import Levenshtein
 import programtokenizer
 import ast
+import clang.cindex
+import clang.enumerations
 
 
 class Evaluator():
@@ -248,6 +250,11 @@ class CEvaluator(Evaluator):
 
 
     def get_variable_list(self, filename):
-        #TODO implement
+        variables = []
+
+        index = clang.cindex.Index.create()
+        tu = index.parse(f.name)
+        tokens = tu.cursor.get_tokens()
+        
         raise NotImplementedError('Implement me')
 
