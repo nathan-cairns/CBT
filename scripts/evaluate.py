@@ -40,7 +40,7 @@ GENERATED_CONTENT_FILE_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'generated
 parser = argparse.ArgumentParser(description='Evaluate CBT generated code', prog='CBT')
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
 parser.add_argument('language', help='Pick a programming language to evaluate.', choices=['py', 'c'])
-parser.add_argument('output_file', help='Name of the file for results to be written out to')
+parser.add_argument('output_environment', help='Distinct name of the directory where the evaluator will do its work, necessary if many of this script are run parallel')
 parser.add_argument('--lines', help='The number of lines to remove and then generate, the default is 1', type=int, choices=range(1,21), default=1)
 parser.add_argument('--num_files', help='Specify the number of files to evaluate, helpful if theres heaps to reduce work load', type=int, default=-1)
 
@@ -144,8 +144,10 @@ if __name__ == '__main__':
     num_lines = args.lines
     checkpoint_dir = args.checkpoint_dir
     language = args.language
-    evaluate_output = args.output_file
+    environment = args.output_environment
     num_files = args.num_files
+
+    environment = os.path.join(it.REPO_ROOT_PATH, 'data', environment)
 
     language_evaluator = None
     if language == 'py':
@@ -156,7 +158,7 @@ if __name__ == '__main__':
         raise Exception('A language must be specified!!')
 
     print('Emptying eval directory...')
-    shutil.rmtree(OUTPUT_PATH, ignore_errors=True)
+    shutil.rmtree(environment, ignore_errors=True)
 
     # Remove last n lines from file and write to new file.
     print('Preparing evaluation set...')
@@ -179,7 +181,7 @@ if __name__ == '__main__':
         if not modified_text:
             print('Error: In {} couldn\'t remove {} lines from the file as it was not long enough. Not considering for evaluation.'.format(str(i), num_lines) )
         else:
-            output_file_name = os.path.join(OUTPUT_PATH, '{}.py'.format(str(i)))
+            output_file_name = os.path.join(environment, 'eval_output', '{}.py'.format(str(i)))
             write_output_file(output_file_name, modified_text)
             item = {
                 'original_lines': removed_lines,
@@ -207,7 +209,7 @@ if __name__ == '__main__':
         }
 
         print('Writing generated content to file...')
-        write_dict_to_file(generated_content, GENERATED_CONTENT_FILE_PATH)
+        write_dict_to_file(generated_content, os.path.join(environment, 'generated_content.json'))
 
         # TODO uncomment when lint stats work (return just lint for gen line number)
         # stats.update(language_evaluator.get_linter_stats(generated_content))
@@ -226,6 +228,6 @@ if __name__ == '__main__':
         print_stats(stats)
 
         print('Writing stats to file...')
-        write_dict_to_file(stats, os.path.join(it.REPO_ROOT_PATH, 'data', evaluate_output))
+        write_dict_to_file(stats, os.path.join(environment, 'stats.json'))
 
         print('Evaluation complete.')
