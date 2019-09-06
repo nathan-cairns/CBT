@@ -40,6 +40,7 @@ GENERATED_CONTENT_FILE_PATH = os.path.join(it.REPO_ROOT_PATH, 'data', 'generated
 parser = argparse.ArgumentParser(description='Evaluate CBT generated code', prog='CBT')
 parser.add_argument('checkpoint_dir', help='The directory of the most recent training checkpoint')
 parser.add_argument('language', help='Pick a programming language to evaluate.', choices=['py', 'c'])
+parser.add_argument('output_file', help='Name of the file for results to be written out to')
 parser.add_argument('--lines', help='The number of lines to remove and then generate, the default is 1', type=int, choices=range(1,21), default=1)
 parser.add_argument('--num_files', help='Specify the number of files to evaluate, helpful if theres heaps to reduce work load', type=int, default=-1)
 
@@ -143,6 +144,7 @@ if __name__ == '__main__':
     num_lines = args.lines
     checkpoint_dir = args.checkpoint_dir
     language = args.language
+    evaluate_output = args.output_file
     num_files = args.num_files
 
     language_evaluator = None
@@ -224,6 +226,6 @@ if __name__ == '__main__':
         print_stats(stats)
 
         print('Writing stats to file...')
-        write_dict_to_file(stats, STAT_FILE_PATH)
+        write_dict_to_file(stats, os.path.join(it.REPO_ROOT_PATH, 'data', evaluate_output))
 
         print('Evaluation complete.')
