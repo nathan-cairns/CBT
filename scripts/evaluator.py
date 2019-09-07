@@ -179,54 +179,12 @@ class Evaluator():
                     break
 
             if first_original_word != '' and first_original_word == first_generated_word:
-                correct_guesses = correct_guesses + 1
+                correct_guesses += 1
 
             if first_original_word == '':
                 unguessable += 1
 
         return correct_guesses, unguessable
-
-    def __get_count_statistics(self, item, word_list):
-        total_correct_frac = 0
-
-
-
-        return 0
-
-        # for i, original_line in enumerate(item['original_lines']):
-        #     original_keywords = dict.fromkeys(word_list, 0)
-        #     generated_keywords = dict.fromkeys(word_list, 0)
-        #     original_arr = original_line.split(' ')
-        #
-        #     for word in original_arr:
-        #         if word in word_list:
-        #             original_keywords[word] += 1
-        #
-        #     generated_arr = item['generated_lines'][i].split(' ')
-        #     for word in generated_arr:
-        #         if word in word_list:
-        #             generated_keywords[word]+= 1
-        #
-        #     total_kwords_in_original = sum(original_keywords.values())
-        #     correct_guesses = 0
-        #
-        #     if total_kwords_in_original == 0:
-        #         total_correct_frac += 1
-        #         break
-        #
-        #     print(original_keywords)
-        #     for kword in original_keywords:
-        #         print(kword)
-        #         if generated_keywords[kword] >= original_keywords[kword]:
-        #             print(original_keywords[kword])
-        #             correct_guesses += 1
-        #         else:
-        #             correct_guesses += generated_keywords[kword]
-        #
-        #     correct_frac = correct_guesses / total_kwords_in_original
-        #     total_correct_frac = total_correct_frac + correct_frac
-
-        return total_correct_frac
 
     def __split_line_into_words(self, line):
         return re.findall(r"[\w']+", line)
@@ -309,7 +267,9 @@ class CEvaluator(Evaluator):
 
 
     def get_keyword_list(self):
-        return programtokenizer.c_keywords
+        disallowed_keywords = ['==', '!=', '--', '++', '&&', '||', '-=', '+=', '*=', '/=', '%=', '&=', '|=', '^=', '<=',
+                               '>=', '<=>' '->', '<<', '>>']
+        return list(filter(lambda x: x not in disallowed_keywords, programtokenizer.c_keywords))
 
 
     def get_variable_list(self, filename):
