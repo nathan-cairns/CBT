@@ -111,12 +111,8 @@ def print_stats(stats):
     for stat, stat_values in stats.items():
         print('\n==============================')
         if isinstance(stat_values, dict):
-            print('{}:'.format(stat))
+            print('{}: {}'.format(stat, stat_values))
             print('==============================')
-            sorted_tuple = sorted(stat_values.items(), key=operator.itemgetter(1))
-            sorted_dict = collections.OrderedDict(sorted_tuple)
-            for stat_value_key, stat_value in sorted_dict.items():
-                print('{}: {}'.format(stat_value_key, stat_value))
         else:
             print('{}: {}'.format(stat, stat_values))
             print('==============================')
