@@ -8,7 +8,6 @@ import clang.cindex
 import clang.enumerations
 import re
 import os
-import shutil
 
 
 class Evaluator():
@@ -17,12 +16,19 @@ class Evaluator():
 
     def get_linter_stats(self, generated_content):
         in_chunks = self.chunks(generated_content, self.PROCESSING_CHUNK_SIZE)
-        progress_bar = it.ProgressBar(0, generated_content.__len__(), prefix='Progress:', suffix='Complete')
+        progress_bar = it.ProgressBar(0, len(generated_content), prefix='Progress:', suffix='Complete')
         progress_bar.print_progress_bar()
 
+        print('Generating Linting results...')
         linting_results = []
         for chunk in in_chunks:
-            linting_results += self.run_linter(chunk)
+            try:
+                linting_results += self.run_linter(chunk)
+            except Exception:
+                progress_bar.increment_errors(self.PROCESSING_CHUNK_SIZE)
+            finally:
+                progress_bar.increment_work(self.PROCESSING_CHUNK_SIZE)
+                progress_bar.print_progress_bar()
         
         return self.generate_linter_stats_from_results(linting_results)
 
