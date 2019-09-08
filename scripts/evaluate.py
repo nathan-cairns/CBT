@@ -211,6 +211,7 @@ if __name__ == '__main__':
         # stats.update(language_evaluator.get_linter_stats(generated_content))
         print('Calculating evaluation statistics...')
         stats.update({
+            'linter_stats': language_evaluator.get_linter_stats(generated_content),
             'distance_vector_stats': language_evaluator.get_distance_vector_stats(generated_content),
             'average_orignial_line_length': language_evaluator.get_average_original_line_length(generated_content),
             'average_generated_line_length': language_evaluator.get_average_generated_line_length(generated_content),

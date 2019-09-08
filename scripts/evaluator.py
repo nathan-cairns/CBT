@@ -1,6 +1,5 @@
 import iteratortools as it
 import subprocess
-import re
 import Levenshtein
 import programtokenizer
 import ast
@@ -8,6 +7,8 @@ import tempfile
 import clang.cindex
 import clang.enumerations
 import re
+import os
+import shutil
 
 
 class Evaluator():
@@ -21,7 +22,7 @@ class Evaluator():
 
         linting_results = []
         for chunk in in_chunks:
-            linting_results = linting_results + self.run_linter(chunk)
+            linting_results += self.run_linter(chunk)
         
         return self.generate_linter_stats_from_results(linting_results)
 
@@ -231,10 +232,28 @@ class PyEvaluator(Evaluator):
         # R refactoring related checks
         # W various warnings
         # E errors, for probable bugs in the code
-        # F fatal, if an error occurred which prevented pylint from doing further processing.
-        pipeline = subprocess.Popen(['pylint', '--msg-template=\'{msg_id}\''] + chunk, stdout=subprocess.PIPE)
-        console_output = pipeline.communicate()
-        return re.findall(r'[CRWEF]\d{4}', str(console_output))
+        # F fatal, if an error otemccurred which prevented pylint from doing further processing.
+        temp_files = []
+        i = 0
+        temp_dir = tempfile.TemporaryDirectory()
+        file_lints = []
+        for item in chunk:
+            last_lines_generated = '\n'.join(item['generated_lines'])
+            big_regex = re.compile('|'.join(map(re.escape, item['original_lines'])))
+            program_without_last_lines = big_regex.sub('', item['original_program'])
+            program_with_new_lines = program_without_last_lines + '\n' + last_lines_generated
+
+            with open(os.path.join(temp_dir.name, '{}.py'.format(str(i))), 'w') as f:
+                f.write(program_with_new_lines)
+                f.seek(0)
+                fname = f.name
+            i += 1
+
+            pipeline = subprocess.Popen(['pylint', '--msg-template=\'{msg_id}-{msg}\''] + [fname], stdout=subprocess.PIPE)
+            console_output = pipeline.communicate()
+            file_lints.append(re.findall(r'[CRWEF]\d{4}', str(console_output)))
+
+        return file_lints
 
     
     def generate_linter_stats_from_results(self, linting_results):
@@ -244,22 +263,29 @@ class PyEvaluator(Evaluator):
         warnings = {}
         # For F prefixes
         fatal_errors = {}
+        num_erroneous = 0
 
-        for linting_result in linting_results:
-            prefix = linting_result[0]
-            if prefix == 'C' or prefix == 'R':
-                style_fails[linting_result] = 1 if linting_result not in style_fails else style_fails[linting_result] + 1 
-            elif prefix == 'W' or prefix == 'E':
-                warnings[linting_result] = 1 if linting_result not in warnings else warnings[linting_result] + 1
-            elif prefix == 'F':
-                fatal_errors[linting_result] = 1 if linting_result not in fatal_errors else fatal_errors[linting_result] + 1
-            else:
-                print('invalid prefix: {}'.format(prefix))
+        for f in linting_results:
+            executable = True
+            for linting_result in f:
+                prefix = linting_result[0]
+                if prefix == 'C' or prefix == 'R':
+                    style_fails[linting_result] = 1 if linting_result not in style_fails else style_fails[linting_result] + 1
+                elif prefix == 'W':
+                    warnings[linting_result] = 1 if linting_result not in warnings else warnings[linting_result] + 1
+                elif prefix == 'F' or prefix == 'E':
+                    fatal_errors[linting_result] = 1 if linting_result not in fatal_errors else fatal_errors[linting_result] + 1
+                    executable = False
+                else:
+                    print('invalid prefix: {}'.format(prefix))
+            if not executable:
+                num_erroneous += 1
 
         return {
             'style_fails': style_fails,
             'warnings': warnings,
-            'fatal_errors': fatal_errors
+            'fatal_errors': fatal_errors,
+            'executable_files': (len(linting_results) - num_erroneous) / len(linting_results)
         }
 
 
