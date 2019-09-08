@@ -123,6 +123,30 @@ class Evaluator():
 
         return correct_guesses / (self.__get_total_number_of_lines(generated_content) - total_unguessable)
 
+    def get_avg_var_count_in_non_generated_prog(self, generated_content):
+        var_counts = []
+        for item in generated_content:
+            try:
+                all_variables = self.get_variable_list(item['original_program'])
+
+                last_lines_original = '\n'.join(item['original_lines'])
+                big_regex = re.compile('|'.join(map(re.escape, item['original_lines'])))
+                program_without_last_lines = big_regex.sub('', item['original_program'])
+
+                variables_in_prog_without_last_lines = []
+                for var in all_variables:
+                    # print(var  + " => " + str(self.__split_line_into_words(program_without_last_lines)))
+                    if var in self.__split_line_into_words(program_without_last_lines) and \
+                            var not in variables_in_prog_without_last_lines and \
+                            var not in self.get_keyword_list():
+                        variables_in_prog_without_last_lines.append(var)
+
+                var_counts.append(len(variables_in_prog_without_last_lines))
+            except Exception:
+                pass
+
+        return sum(var_counts) / len(var_counts)
+
     def get_average_original_line_length(self, generated_content):
         return self.__get_average_line_length(generated_content, 'original_lines')
 

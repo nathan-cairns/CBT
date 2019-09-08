@@ -218,6 +218,7 @@ if __name__ == '__main__':
             'variable_stats': language_evaluator.get_variable_stats(generated_content),
             'first_keyword_stats': language_evaluator.get_first_keyword_stats(generated_content),
             'first_variable_stats': language_evaluator.get_first_variable_stats(generated_content),
+            'avg_var_count_in_non_generated_prog': language_evaluator.get_avg_var_count_in_non_generated_prog(generated_content)
         })
 
         print('Printing stats...')
