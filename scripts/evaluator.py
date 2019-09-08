@@ -1,3 +1,4 @@
+import os
 import iteratortools as it
 import subprocess
 import Levenshtein
@@ -7,7 +8,6 @@ import tempfile
 import clang.cindex
 import clang.enumerations
 import re
-import os
 
 
 class Evaluator():
@@ -23,8 +23,9 @@ class Evaluator():
         linting_results = []
         for chunk in in_chunks:
             try:
-                linting_results += self.run_linter(chunk)
-            except Exception:
+                lint_result = self.run_linter(chunk)
+                linting_results += lint_result
+            except Exception as e:
                 progress_bar.increment_errors(self.PROCESSING_CHUNK_SIZE)
             finally:
                 progress_bar.increment_work(self.PROCESSING_CHUNK_SIZE)
@@ -128,7 +129,10 @@ class Evaluator():
             except Exception:
                 total_unguessable += 1
 
-        return correct_guesses / (self.__get_total_number_of_lines(generated_content) - total_unguessable)
+        total_guessable = self.__get_total_number_of_lines(generated_content) - total_unguessable
+        if total_guessable <= 0:
+            return "NA"
+        return correct_guesses / total_guessable
 
     def get_avg_var_count_in_non_generated_prog(self, generated_content):
         var_counts = []
@@ -263,6 +267,8 @@ class PyEvaluator(Evaluator):
 
     
     def generate_linter_stats_from_results(self, linting_results):
+        if len(linting_results) == 0:
+            return {}
         # For C and R prefixes
         style_fails = {}
         # For W and E prefixes
@@ -312,13 +318,42 @@ class PyEvaluator(Evaluator):
 
 class CEvaluator(Evaluator):
     def run_linter(self, chunk):
-        #TODO implement
-        raise NotImplementedError('Implement me')
+        i = 0
+        temp_dir = tempfile.TemporaryDirectory()
+        file_lints = []
+        for item in chunk:
+            last_lines_generated = '\n'.join(item['generated_lines'])
+            big_regex = re.compile('|'.join(map(re.escape, item['original_lines'])))
+            prog = self.__remove_last_closing_curlies(item['original_program'])
+            program_without_last_lines = big_regex.sub('', prog)
+            program_with_new_lines = program_without_last_lines + '\n' + last_lines_generated
+            with open(os.path.join(temp_dir.name, '{}.c'.format(str(i))), 'w') as f:
+                f.write(self.__complete_braces(program_with_new_lines))
+                f.seek(0)
+                fname = f.name
+            i += 1
+
+            pipeline = subprocess.Popen(['gcc', fname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = pipeline.communicate()
+            out_lines = re.compile(r"\s*\r\n\s*").split(stderr.decode('utf8'))
+            file_lints.append(out_lines)
+        return file_lints
 
 
     def generate_linter_stats_from_results(self, linting_results):
-        #TODO implement
-        raise NotImplementedError('Implement me')
+        if len(linting_results) == 0:
+            return {}
+        unexecutable = 0
+        for linting_result in linting_results:
+            empty = True
+            for lint_line in linting_result:
+                if lint_line.strip() != '':
+                    empty = False
+            if not empty:
+                unexecutable += 1
+
+        return {'errors': linting_results,
+                'executable_files': (len(linting_results) - unexecutable) / len(linting_results)}
 
 
     def get_keyword_list(self):
@@ -341,3 +376,24 @@ class CEvaluator(Evaluator):
                 variables.append(token.spelling)
 
         return variables
+
+    def __remove_last_closing_curlies(self, program):
+        while program[len(program) - 1] == '}' or \
+                program[len(program) - 1] == ' ' or \
+                program[len(program) - 1] == '\n':
+            program = program[:-1]
+        return program
+
+    def __complete_braces(self, program):
+        nest_level = 0
+        for char in program:
+            if char == '{':
+                nest_level += 1
+            if char == '}':
+                nest_level -= 1
+
+        if nest_level > 0:
+            for i in range(nest_level):
+                program += '}'
+
+        return program

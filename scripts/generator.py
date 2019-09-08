@@ -9,7 +9,7 @@ import os
 import sys
 import tempfile
 import subprocess
-tf.enable_eager_execution()
+#tf.enable_eager_execution()
 
 # ARGPARSE #
 
@@ -42,7 +42,6 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
         start_string, variable_to_token = name_tokenizer.tokenize(start_string)
         start_string = programtokenizer.SyntaxTokenizer(programtokenizer.word_to_token).tokenize(start_string)
     else:
-        print('lang not supported')
         sys.exit(1)
 
     # Converting our start string to numbers (vectorizing)
@@ -96,7 +95,7 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
             subprocess.call([os.path.join(it.REPO_ROOT_PATH, 'lib', 'C-Code-Beautifier'), f.name, os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c')])
         with open(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c'), mode='r') as f:
             whole_output = f.read()
-        just_generated_lines = ''.join(whole_output.split(';')[-(num_lines + 1):])
+        just_generated_lines = ''.join(whole_output.split('\n')[-(num_lines + 1):])
         os.remove(os.path.join(it.REPO_ROOT_PATH, 'tempfile.c'))
         os.remove(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c'))
     elif language.lower() in 'python':
