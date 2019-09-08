@@ -62,8 +62,6 @@ class Evaluator():
         times_new_variable_was_introduced_generated = []
 
         for item in generated_content:
-            original_count = 0
-            generated_count = 0
             try:
                 all_variables = self.get_variable_list(item['original_program'])
 
@@ -84,6 +82,7 @@ class Evaluator():
                             var not in variables_in_last_lines:
                         variables_in_last_lines.append(var)
 
+                original_count = 0
                 for var in variables_in_last_lines:
                     if var not in variables_in_prog_without_last_lines:
                         original_count += 1

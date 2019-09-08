@@ -14,7 +14,10 @@ setup(name='cbt',
             'pylint ',
             'pycparser',
             'libclang-py3',
-            'python-Levenshtein'
+            'python-Levenshtein',
+            'plotly',
+            'pandas',
+            'matplotlib'
       ],
       dependency_links=[
             'https://github.com/codeauroraforum/comment-filter/tarball/master#egg=comment-filter-v1.0.0'
