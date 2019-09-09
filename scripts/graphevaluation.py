@@ -42,6 +42,25 @@ def plot_distance_vector_stats(eval_objects):
     plt.show()
 
 
+def plot_executable_progs_stats(eval_objects):
+    executable_1_line = [3, 4, 5, 6]
+    executable_2_line = [2, 3, 4, 5]
+    executable_3_line = [1, 2, 3, 4]
+
+    plt.bar(np.arange(len(executable_2_line)), executable_1_line, width=.3, label='1 Line generated')
+    plt.bar(np.arange(len(executable_2_line)) + 0.3, executable_2_line, width=.3, label='2 lines generated')
+    plt.bar(np.arange(len(executable_2_line)) + 0.6, executable_3_line, width=.3, label='3 lines generated')
+    plt.xlabel('Models trained on differing data portions')
+    plt.ylabel('Portion of programs which are executable/compilable (%)')
+    plt.title('Portion of programs produced which are executable across lines generated and model training data splits')
+    plt.xticks(np.arange(len(executable_1_line)), ['Trained on 10% of data',
+                                                   'Trained on 50% of data',
+                                                   'Trained on 75% of data',
+                                                   'Trained on 100% of data'])
+    plt.legend()
+    plt.show()
+
+
 def plot_first_keyword_and_variable_stats(eval_objects):
     first_keywords = []
     first_variables = []
@@ -141,9 +160,6 @@ def plot_keyword_stats(eval_objects):
     plt.show()
 
 
-
-
-
 if __name__ == '__main__':
     eval_dir = sys.argv[1]
     eval_files = {}
@@ -153,8 +169,9 @@ if __name__ == '__main__':
 
     sorted_eval_objects = sorted(eval_files.items(), key=lambda x: int(re.compile(r"[0-9]+").search(x[0]).group(0)))
 
-    plot_first_keyword_and_variable_stats(sorted_eval_objects)
-    plot_distance_vector_stats(sorted_eval_objects)
-    plot_keyword_stats(eval_files)
-    plot_epoch_loss_function()
+    #plot_first_keyword_and_variable_stats(sorted_eval_objects)
+    #plot_distance_vector_stats(sorted_eval_objects)
+    plot_executable_progs_stats(sorted_eval_objects)
+    #plot_keyword_stats(eval_files)
+    #plot_epoch_loss_function()
 
