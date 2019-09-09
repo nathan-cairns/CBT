@@ -88,8 +88,8 @@ def plot_first_keyword_and_variable_stats(eval_objects):
 def plot_epoch_loss_function():
     # TODO: FILL IN=================================================================================================
 
-    python_loss_values = [10, 6, 5, 4, 4.5, 4, 3.7, 3.5, 3.35, 3.3]
-    c_loss_values = [11, 5, 4, 3, 3.5, 3, 2.7, 2.5, 2.35, 2.3]
+    python_loss_values = [5.6484, 1.8659, 1.1984, 1.0552, 0.9602, 0.8880, 0.8289, 0.7780, 0.7345, 0.6961, 0.6614]
+    c_loss_values = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     plt.plot(python_loss_values, label='Python Model')
     plt.plot(c_loss_values, label='C Model')
     plt.title('Scalar Loss functions for C and Python models across training')
