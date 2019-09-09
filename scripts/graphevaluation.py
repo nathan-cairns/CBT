@@ -33,6 +33,7 @@ def plot_distance_vector_stats(eval_objects):
     plt.bar(np.arange(len(distance_vectors)) + .6, gen_line_len, width=.3, label='Avg. generated line length')
     plt.ylabel('No. of characters')
     plt.xlabel('Models trained on differing data portions')
+    plt.title('Distance vector of lines generated from actual across model training data splits')
     plt.xticks(np.arange(len(distance_vectors)), ['Trained on 10% of data',
                                                   'Trained on 50% of data',
                                                   'Trained on 75% of data',
@@ -54,6 +55,7 @@ def plot_first_keyword_and_variable_stats(eval_objects):
     plt.bar(np.arange(len(first_keywords)) + .4, first_variables, width=.4, label='Model accuracy at guessing next variable')
     plt.ylabel('Model accuracy at guessing (%)')
     plt.xlabel('Models trained on differing data portions')
+    plt.title('Accuracy of model keyword and variable guessing across model training data splits')
     plt.xticks(np.arange(len(first_keywords)), ['Trained on 10% of data',
                                                 'Trained on 50% of data',
                                                 'Trained on 75% of data',
@@ -62,23 +64,84 @@ def plot_first_keyword_and_variable_stats(eval_objects):
     plt.show()
 
 
+def plot_epoch_loss_function():
+    python_loss_values = [10, 6, 5, 4, 4.5, 4, 3.7, 3.5, 3.35, 3.3]
+    c_loss_values = [11, 5, 4, 3, 3.5, 3, 2.7, 2.5, 2.35, 2.3]
+    plt.plot(python_loss_values, label='Python Model')
+    plt.plot(c_loss_values, label='C Model')
+    plt.title('Scalar Loss functions for C and Python models across training')
+    plt.ylabel('Scalar loss function')
+    plt.xlabel('Epoch')
+    plt.xticks(np.arange(10))
+    plt.ylim(ymin=0)
+    plt.legend()
+    plt.show()
+
+
 def plot_keyword_stats(eval_objects):
+
+    NUM_KWORDS_TO_SHOW = 10
+
+    def remove_index_from_all(lists, i):
+        for list in lists:
+            list[1].pop(i)
+        return lists
+
+    def all_are_zero(lists, i):
+        for list in lists:
+            if list[1][i] != 0:
+                return False
+        return True
+
+    def trim_lists(lists, num):
+        out = []
+        for list in lists:
+            out.append((list[0], list[1][:num]))
+        return out
+
+    orig_keywords = {k: v['keyword_stats']['original_keyword_frequencies'] for k, v in eval_objects.items()}
     gen_keywords = {k: v['keyword_stats']['generated_keyword_frequencies'] for k, v in eval_objects.items()}
+    orig_kwords = orig_keywords[next(iter(orig_keywords.keys()))]
+    kwords_sorted_by_count = list(reversed(sorted(orig_kwords, key=orig_kwords.__getitem__)))
 
-    keywords = []
-    gen_keyword_data = []
+    orig_kword_values = []
+    for k in kwords_sorted_by_count:
+        orig_kword_values.append(orig_kwords[k])
+
+    generated_keyword_models = []
     for k in gen_keywords:
-        sorted_kwords = sorted(gen_keywords[k].items(), key=lambda kv: kv[0])
-        gen_keyword_data.append([kv[1] for kv in sorted_kwords])
-        keywords = [kv[0] for kv in sorted_kwords]
+        kword_values = []
+        for kword in kwords_sorted_by_count:
+            kword_values.append(gen_keywords[k][kword])
+        generated_keyword_models.append((k, kword_values))
+    generated_keyword_models.append(generated_keyword_models.pop(0))
+    generated_keyword_models = list(reversed(generated_keyword_models))
+    kword_models = [('Original line keyword freq.', orig_kword_values)] + generated_keyword_models
 
-    print(keywords)
-    print(gen_keyword_data)
+    cleaned_kword_models = kword_models.copy()
+    offset = 0
+    for i in range(len(kword_models[0][1])):
+        if all_are_zero(kword_models, i - offset):
+            cleaned_kword_models = remove_index_from_all(cleaned_kword_models, i - offset)
+            offset += 1
 
-    gen_df = pd.DataFrame(data=gen_keyword_data, columns=keywords)
-    print(gen_df)
-    fig = px.bar(gen_df)
-    fig.show()
+    cleaned_kword_models = trim_lists(cleaned_kword_models, NUM_KWORDS_TO_SHOW)
+
+    bar_width = 0.9 / (1 + len(generated_keyword_models))
+
+    i = 0
+    for k in cleaned_kword_models:
+        plt.bar(np.arange(NUM_KWORDS_TO_SHOW) + (i * bar_width), k[1], width=bar_width, label=k[0])
+        i += 1
+    plt.ylabel('Keyword frequency in last n lines')
+    plt.xlabel('Keyword')
+    plt.title('Keyword frequencies across models')
+    plt.xticks(np.arange(NUM_KWORDS_TO_SHOW), kwords_sorted_by_count[:NUM_KWORDS_TO_SHOW])
+    plt.legend()
+    plt.show()
+
+
+
 
 
 if __name__ == '__main__':
@@ -92,5 +155,6 @@ if __name__ == '__main__':
 
     plot_first_keyword_and_variable_stats(sorted_eval_objects)
     plot_distance_vector_stats(sorted_eval_objects)
+    plot_keyword_stats(eval_files)
+    plot_epoch_loss_function()
 
-    #plot_keyword_stats(eval_files)
