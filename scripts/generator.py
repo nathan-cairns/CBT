@@ -9,6 +9,7 @@ import os
 import sys
 import tempfile
 import subprocess
+import uuid
 #tf.enable_eager_execution()
 
 # ARGPARSE #
@@ -89,15 +90,16 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
 
     if language.lower() == 'c':
         whole_output = programtokenizer.untokenize_c(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
-        with open(os.path.join(it.REPO_ROOT_PATH, 'tempfile.c'), mode='w+') as f:
+        tempid = str(uuid.uuid4())
+        with open(os.path.join(it.REPO_ROOT_PATH, 'temp{}.c'.format(tempid)), mode='w+') as f:
             f.write(whole_output)
             f.flush()
-            subprocess.call([os.path.join(it.REPO_ROOT_PATH, 'lib', 'C-Code-Beautifier'), f.name, os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c')])
-        with open(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c'), mode='r') as f:
+            subprocess.call([os.path.join(it.REPO_ROOT_PATH, 'lib', 'C-Code-Beautifier'), f.name, os.path.join(it.REPO_ROOT_PATH, 'formattedtemp{}.c'.format(tempid))])
+        with open(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp{}.c'.format(tempid)), mode='r') as f:
             whole_output = f.read()
         just_generated_lines = ''.join(whole_output.split('\n')[-(num_lines + 1):])
-        os.remove(os.path.join(it.REPO_ROOT_PATH, 'tempfile.c'))
-        os.remove(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp.c'))
+        os.remove(os.path.join(it.REPO_ROOT_PATH, 'temp{}.c'.format(tempid)))
+        os.remove(os.path.join(it.REPO_ROOT_PATH, 'formattedtemp{}.c'.format(tempid)))
     elif language.lower() in 'python':
         whole_output = programtokenizer.untokenize_python(start_string + ''.join(text_generated), {v: k for k, v in variable_to_token.items()})
         just_generated_lines = programtokenizer.untokenize_python(''.join(text_generated), {v: k for k, v in variable_to_token.items()})
