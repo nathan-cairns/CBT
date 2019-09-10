@@ -58,8 +58,8 @@ def plot_executable_progs_stats(eval_objects):
     # executable_3_line = [0.45, 0.65, 1.08, 1.10]
 
     plt.bar(np.arange(len(executable_2_line)), executable_1_line, width=.3, label='1 Line generated')
-    plt.bar(np.arange(len(executable_2_line)) + 0.3, executable_2_line, width=.3, label='2 lines generated')
-    plt.bar(np.arange(len(executable_2_line)) + 0.6, executable_3_line, width=.3, label='3 lines generated')
+    plt.bar(np.arange(len(executable_2_line)) + 0.3, executable_2_line, width=.3, label='2 Lines generated')
+    plt.bar(np.arange(len(executable_2_line)) + 0.6, executable_3_line, width=.3, label='3 Lines generated')
     plt.xlabel('Models trained on differing data portions')
     plt.ylabel(ylabel)
     plt.title(title)
@@ -172,7 +172,7 @@ def plot_keyword_stats(eval_objects):
 
 def plot_variable_stats(eval_objects):
 
-    c_times_var_was_introduced = [0.475, 1.117, 0.883, 0.81, 0.967]
+    c_times_var_was_introduced = [0.1461, 1.429, 1.8104, 1.503, 1.4405]
     python_times_var_was_introduced = [0.1443, 0.2447, 0.2468, 0.2010, 0.2810]
 
     plt.bar(np.arange(len(c_times_var_was_introduced)), c_times_var_was_introduced, width=.4, label='c')
