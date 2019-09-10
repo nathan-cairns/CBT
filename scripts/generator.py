@@ -81,7 +81,7 @@ def generate_text(model, language, start_string, num_lines, index_to_token, var_
         generated_character = token_to_index[predicted_id]
         generated_line += generated_character
 
-        if generated_character == newline_token(language):
+        if generated_character == newline_token(language) or len(generated_line) > 100:
             if generated_line.strip() != '':
                 new_lines += 1
                 text_generated.append(generated_line)

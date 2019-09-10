@@ -45,16 +45,24 @@ def plot_distance_vector_stats(eval_objects):
 def plot_executable_progs_stats(eval_objects):
     # TODO: FILL IN=================================================================================================
 
-    executable_1_line = [3, 4, 5, 6]
-    executable_2_line = [2, 3, 4, 5]
-    executable_3_line = [1, 2, 3, 4]
+    # Python executable lines stats
+    # executable_1_line = [3, 4, 5, 6]
+    # executable_2_line = [2, 3, 4, 5]
+    # executable_3_line = [1, 2, 3, 4]
+
+    # C executable lines stats
+    title = 'Portion of c programs produced which can be successfully compiled across lines generated and model training data splits'
+    ylabel = 'Portion of programs which are compilable (%)'
+    executable_1_line = [4.51, 12.59, 12.94, 31.22]
+    executable_2_line = [0.56, 1.52, 2.37, 1.41]
+    executable_3_line = [0.45, 0.65, 1.08, 1.10]
 
     plt.bar(np.arange(len(executable_2_line)), executable_1_line, width=.3, label='1 Line generated')
     plt.bar(np.arange(len(executable_2_line)) + 0.3, executable_2_line, width=.3, label='2 lines generated')
     plt.bar(np.arange(len(executable_2_line)) + 0.6, executable_3_line, width=.3, label='3 lines generated')
     plt.xlabel('Models trained on differing data portions')
-    plt.ylabel('Portion of programs which are executable/compilable (%)')
-    plt.title('Portion of programs produced which are executable across lines generated and model training data splits')
+    plt.ylabel(ylabel)
+    plt.title(title)
     plt.xticks(np.arange(len(executable_1_line)), ['Trained on 10% of data',
                                                    'Trained on 50% of data',
                                                    'Trained on 75% of data',
@@ -86,12 +94,10 @@ def plot_first_keyword_and_variable_stats(eval_objects):
 
 
 def plot_epoch_loss_function():
-    # TODO: FILL IN=================================================================================================
-
     python_loss_values = [5.6484, 1.8659, 1.1984, 1.0552, 0.9602, 0.8880, 0.8289, 0.7780, 0.7345, 0.6961, 0.6614]
-    c_loss_values = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    plt.plot(python_loss_values, label='Python Model')
-    plt.plot(c_loss_values, label='C Model')
+    c_loss_values = [6.5483, 1.3674, 1.0299, 0.9366, 0.8804, 0.8419, 0.8130, 0.7901, 0.7718, 0.7575, 0.7462]
+    plt.plot(python_loss_values, label='Python Model', linewidth=3)
+    plt.plot(c_loss_values, label='C Model', linewidth=3)
     plt.title('Scalar Loss functions for C and Python models across training')
     plt.ylabel('Scalar loss function')
     plt.xlabel('Epoch')

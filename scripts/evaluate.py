@@ -160,6 +160,9 @@ if __name__ == '__main__':
     print('Preparing evaluation set...')
     if language == 'c':
         programs = [file_path for file_path in it.get_lang_files(language, evaluation_only=True)] if num_files == -1 else [file_path for file_path in it.get_lang_files(language, evaluation_only=True)[:num_files]]
+        # programs.pop(12)
+        # programs.pop(13)
+        # programs.pop(14)
     if language == 'py':
         programs = []
         files = os.listdir(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this')) if num_files == -1 else sorted_alphanumeric(os.listdir(os.path.join(it.REPO_ROOT_PATH, 'data', 'python_files_use_this')))[:num_files]
