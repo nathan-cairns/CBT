@@ -68,6 +68,20 @@ optional arguments:
   --num_files           Specify the number of files to evaluate, helpful if theres heaps to reduce work load
 ```
 
+## Script Overview
+
+* **convertto3.py** - Used to convert all python programs to python3. This is to ensure consistency amongst the data.
+* **evaluate.py** - Evaluates the results of a trained LSTM code generation model.
+* **evaluator.py** - Provides several helper classes which the evaluate.py script uses in a polymorphic fashion to evaluate generated code * in different langauges.
+* **generator.py** - Uses a provided trained code generation LSTM model to generated lines of code from a source sequence.
+* **graphevaluation.py** - Generates graphs from evaluation statistics.
+* **iteratortools.py** - Provides several helper utility functions for iteration over the dataset.
+* **model_maker.py** - Provides a helper function for building a LSTM model.
+* **programtokenizer.py** - Tokenizes and untokenizes Python and C code for training and generation.
+* **stripcomments.py** - Removes all comments from code examples. Used so the LSTM learns just the code and not the comments.
+* **train.py** - Trains an code generation LSTM model.
+
+
 ## Built With
 * [Tensorflow](https://www.tensorflow.org)
 
