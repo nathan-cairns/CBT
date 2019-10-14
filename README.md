@@ -26,27 +26,14 @@ CBT
 4. Run ``python setup.py install``
 
 ## Usage
-### Generator
+### generator.py
 The generator can be used to generate a number of lines of code based on a seed sequence.
 
-The generator requires the following arguments:
-* The location of a model file (the latest checkpoint from training)
-* The size of the vocabulary
-* An input method (either from console or from file)
-
-A full summary of arguments is provided below:
+A summary of arguments is provided below:
 ```
-python3 scripts/generator.py --help
-
-usage: CBT [-h] [--Cin CIN] [--Fin FIN] [--Fout FOUT]
-           [--lines {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19, 20}]
-           checkpoint_dir vocab_size
-
-Automatically Generate Code
-
 positional arguments:
   checkpoint_dir        The directory of the most recent training checkpoint
-  vocab_size            The size of the vocabulary
+  language              The language being generated
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -55,6 +42,30 @@ optional arguments:
   --Fout FOUT           Specify a file to output to
   --lines {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19, 20}
                         The number of lines to generate, the default is 1
+```
+Use `python generator.py --help` for more info.
+
+### train.py
+This script is used to train a LSTM code generation model.
+
+The usage is as follows:
+`python train.py [language] [checkpoint_dir] [portion_to_train] [load_from_file]`
+
+### evaluate.py
+This script is used to evaluate the performance of a given LSTM code generation model.
+
+A summary of arguments is provided below:
+```
+positional arguments:
+  checkpoint_dir        The directory of the most recent training checkpoint
+  language              Pick a programming language to evaluate.
+  output_environment    Distinct name of the directory where the evaluator will do its work, necessary if many of this script are run parallel
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --lines {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19, 20}
+                        The number of lines to generate, the default is 1
+  --num_files           Specify the number of files to evaluate, helpful if theres heaps to reduce work load
 ```
 
 ## Built With
