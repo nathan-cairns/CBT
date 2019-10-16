@@ -1,12 +1,11 @@
 # CBT (Code By Tensors)
 
-This project aims to automatically generate code using LSTMs.
+This project aims to automatically generate code using LSTMs. It is an implementation of a Part IV project from the University of Auckland Engineering department, 2019. The project page can be found [here](https://part4project.foe.auckland.ac.nz/home/project/detail/2182/).
 
 This repository contains scripts for preparing training data, training machine learning models, and generating code.
 
 This is an University of Auckland Engineering Part Four Honours Project.
 ## Getting Started
-Clang
 1. Clone the repo and set up your Python environment to use `Python 3.6` (requirements from Tensorflow).
 2. Run ``python setup.py install``. This will get you *most* of the dependencies needed for running training and generation scripts.
 3. Download the datasets from [kaggle](https://www.kaggle.com/arjoonn/codechef-competitive-programming). Unzip the files and place them in the `data` directory of the cloned repository (see below).
