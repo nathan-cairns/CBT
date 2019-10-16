@@ -4,7 +4,6 @@ This project aims to automatically generate code using LSTMs. It is an implement
 
 This repository contains scripts for preparing training data, training machine learning models, and generating code.
 
-This is an University of Auckland Engineering Part Four Honours Project.
 ## Getting Started
 1. Clone the repo and set up your Python environment to use `Python 3.6` (requirements from Tensorflow).
 2. Run ``python setup.py install``. This will get you *most* of the dependencies needed for running training and generation scripts.
