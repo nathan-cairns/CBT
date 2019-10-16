@@ -6,24 +6,32 @@ This repository contains scripts for preparing training data, training machine l
 
 This is an University of Auckland Engineering Part Four Honours Project.
 ## Getting Started
-
-1. Clone the repo and make sure you have ``python 3.0^`` installed!
-2. Download the dataset [here](https://eth-sri.github.io/py150) under **Download Source Files** described as *An archive of source files used to generate the py150 Dataset*. 
-3. Unzip *all* the contents of the downloaded file, and copy the directory ``py150_files`` from the unzipped contents to the ``data`` directory in your cloned repository. The contents of your data directory should look something like:
+C code beautifier
+Clang
+1. Clone the repo and set up your Python environment to use `Python 3.6` (requirements from Tensorflow).
+2. Run ``python setup.py install``. This will get you *most* of the dependencies needed for running training and generation scripts.
+3. Download the datasets from [kaggle](https://www.kaggle.com/arjoonn/codechef-competitive-programming). Unzip the files and place them in the `data` directory of the cloned repository (see below).
 ```
 CBT
 └── data
-    ├── py150_files
-    |   ├── data
-    |   |   └──...
-    |   ├── github_repos.txt
-    |   ├── python50k_eval.txt
-    |   ├── python100k_train.txt
-    |   └── README.md
+    ├── codechef-competitive-programming
+    |   ├── program_codes
+    |   |   ├── first.csv
+    |   |   ├── second.csv
+    |   |   └── third.csv
+    |   ├── questions.csv
+    |   └── solutions.csv
     └── .gitkeep
-
 ```
-4. Run ``python setup.py install``
+4. Download the [C-Code-Beautifier](https://github.com/ayonious/C-Code-Beautifier/releases/download/v0.7/C-Code-Beautifier) library and follow the instructions to create a compiled binary called `C-Code-Beautifier` for your machine. You may have to compile directly from the source code if on Windows. Once you have an executable, move this to the `lib` directory in the cloned repository (see below).
+```
+CBT
+└── lib
+    ├── C-Code-Beautifier.exe
+    └── .gitkeep
+```
+5. Download [LLVM](http://releases.llvm.org/download.html) and ensure it is callable from your command line. For Windows, this will mean adding `LLVM\bin` to your `PATH` and on Linux this will differ.
+
 
 ## Usage
 ### generator.py
