@@ -23,7 +23,7 @@ CBT
     |   └── solutions.csv
     └── .gitkeep
 ```
-4. Download the [C-Code-Beautifier](https://github.com/ayonious/C-Code-Beautifier/releases/download/v0.7/C-Code-Beautifier) library and follow the instructions to create a compiled binary called `C-Code-Beautifier` for your machine. You may have to compile directly from the source code if on Windows. Once you have an executable, move this to the `lib` directory in the cloned repository (see below).
+4. Download the [C-Code-Beautifier](https://github.com/ayonious/C-Code-Beautifier/) library and follow the instructions to create a compiled binary called `C-Code-Beautifier` for your machine. You may have to compile directly from the source code if on Windows. Once you have an executable, move this to the `lib` directory in the cloned repository (see below).
 ```
 CBT
 └── lib
