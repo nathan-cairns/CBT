@@ -9,7 +9,7 @@ setup(name='cbt',
       author='Buster & Nathan',
       install_requires=[
             'comment-filter',
-            'tensorflow==2.9.3',
+            'tensorflow==2.11.1',
             'astunparse',
             'pylint ',
             'pycparser',
